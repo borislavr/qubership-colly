@@ -18,6 +18,10 @@ public class Environment extends PanacheEntity {
     public String owner;
     public String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    public EnvironmentStatus status = EnvironmentStatus.FREE;
+
     @ManyToOne
     @JoinColumn(referencedColumnName = "name")
     @JsonIgnore

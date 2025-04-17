@@ -34,7 +34,7 @@
     <!-- Table Wrapper -->
     <div class="card shadow-sm">
         <div class="card-body p-0">
-            <div class="table-responsive">
+            <div class="table-responsive" style="min-height: 150px;">
                 <table id="envTable" class="table table-hover table-bordered mb-0">
                     <thead class="table-light">
                     <tr>
@@ -42,7 +42,18 @@
                         <th class="sortable" onclick="sortTable(1)">Namespace(s)</th>
                         <th class="sortable" onclick="sortTable(2)">Cluster</th>
                         <th class="sortable" onclick="sortTable(3)">Owner</th>
-                        <th class="sortable" onclick="sortTable(4)">Description</th>
+                        <th class="sortable position-relative" onclick="toggleStatusFilter()">
+                            Status
+                            <div id="statusFilterDropdown"
+                                 class="position-absolute bg-white border rounded p-2 shadow-sm d-none"
+                                 style="top: 100%; left: 0; z-index: 1000; min-width: 150px;">
+                                <label><input type="checkbox" value="In Use" onchange="applyStatusFilter()"> In Use</label>
+                                <label><input type="checkbox" value="Reserved" onchange="applyStatusFilter()"> Reserved</label>
+                                <label><input type="checkbox" value="Free" onchange="applyStatusFilter()"> Free</label>
+                                <label><input type="checkbox" value="Migrating" onchange="applyStatusFilter()"> Migrating</label>
+                            </div>
+                        </th>
+                        <th class="sortable" onclick="sortTable(5)">Description</th>
                         <th>Actions</th>
                     </tr>
                     </thead>
@@ -57,6 +68,7 @@
                             </td>
                             <td>{env.cluster.name}</td>
                             <td>{env.owner}</td>
+                            <td>{env.status.getDisplayName}</td>
                             <td>{env.description}</td>
                             <td>
                                 <button type="button" class="btn btn-outline-light"
@@ -85,11 +97,21 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Name</label>
-                        <input type="text" disabled="disabled" readonly="readonly" aria-label="Name" id="envNameField" class="form-control">
+                        <input type="text" disabled="disabled" readonly="readonly" aria-label="Name" id="envNameField"
+                               class="form-control">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Owner</label>
                         <input type="text" aria-label="Owner" id="envOwnerField" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" id="envStatusField" aria-label="Select Status">
+                            <option value="IN_USE">In Use</option>
+                            <option value="RESERVED">Reserved</option>
+                            <option value="FREE">Free</option>
+                            <option value="MIGRATING">Migrating</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
@@ -158,12 +180,47 @@
         filterTable();
     }
 
+    function toggleStatusFilter() {
+        const dropdown = document.getElementById("statusFilterDropdown");
+        dropdown.classList.toggle("d-none");
+    }
+
+    function applyStatusFilter() {
+        const table = document.getElementById("envTable");
+        const rows = Array.from(table.tBodies[0].rows);
+        const checkboxes = document.querySelectorAll("#statusFilterDropdown input[type=checkbox]");
+        const selectedStatuses = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        console.log(selectedStatuses);
+        let visibleRowCount = 0;
+
+        rows.forEach(row => {
+            const status = row.cells[4].innerText.trim();
+            const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(status);
+            row.style.display = matchesStatus ? "" : "none";
+            if (matchesStatus) visibleRowCount++;
+        });
+
+        document.getElementById("emptyState").style.display = visibleRowCount === 0 ? "block" : "none";
+    }
+
+    document.addEventListener('click', function (event) {
+        const dropdown = document.getElementById("statusFilterDropdown");
+        const header = dropdown.parentElement;
+        if (!header.contains(event.target)) {
+            dropdown.classList.add("d-none");
+        }
+    });
+
+
     let dialog = document.getElementById('editDialog');
 
     async function saveChanges() {
         const newName = dialog.querySelector('#envNameField').value;
         const newOwner = dialog.querySelector('#envOwnerField').value;
         const newDescription = dialog.querySelector('#envDescriptionField').value;
+        const newStatus = dialog.querySelector('#envStatusField').value;
 
         if (newName.trim() === '') {
             alert('Please fill Environment Name.');
@@ -174,6 +231,7 @@
         formData.append('name', newName);
         formData.append('owner', newOwner);
         formData.append('description', newDescription);
+        formData.append('status', newStatus);
 
         await fetch('/colly/environments/' + envId, {
             method: 'POST',
@@ -193,6 +251,7 @@
         dialog.querySelector('#envNameField').value = env.name;
         dialog.querySelector('#envOwnerField').value = env.owner;
         dialog.querySelector('#envDescriptionField').value = env.description;
+        dialog.querySelector('#envStatusField').value = env.status;
     })
 
 </script>

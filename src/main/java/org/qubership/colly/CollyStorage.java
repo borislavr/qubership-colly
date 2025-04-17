@@ -9,6 +9,7 @@ import jakarta.transaction.Transactional;
 import org.qubership.colly.data.CloudPassport;
 import org.qubership.colly.db.Cluster;
 import org.qubership.colly.db.Environment;
+import org.qubership.colly.db.EnvironmentStatus;
 import org.qubership.colly.storage.ClusterRepository;
 import org.qubership.colly.storage.EnvironmentRepository;
 
@@ -63,15 +64,16 @@ public class CollyStorage {
 
 
     @Transactional
-    public void saveEnvironment(String id, String name, String owner, String description) {
+    public void saveEnvironment(String id, String name, String owner, String description, String status) {
         Environment environment = environmentRepository.findById(Long.valueOf(id));
         if (environment == null) {
             throw new RuntimeException("Environment with id " + id + " not found");
         }
-        Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description);
+        Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description + " status " + status);
         environment.name = name;
         environment.owner = owner;
         environment.description = description;
+        environment.status = EnvironmentStatus.fromString(status);
         environmentRepository.persist(environment);
     }
 }
