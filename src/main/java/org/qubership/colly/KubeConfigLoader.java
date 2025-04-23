@@ -28,14 +28,15 @@ public class KubeConfigLoader {
         }
         List<KubeConfig> kubeConfigs = new ArrayList<>();
         Path dir = Paths.get(kubeconfigFolder.get());
-        Log.debug("Loading kubeconfigs from " + dir);
+        Log.info("Loading kubeconfigs from " + dir);
         try (Stream<Path> paths = Files.list(dir)) {
             paths.filter(Files::isRegularFile)
                     .forEach(fileName -> {
                         try {
+                            Log.info("[INFO] Loading kubeconfig from file - " + fileName);
                             kubeConfigs.add(KubeConfig.loadKubeConfig(Files.newBufferedReader(fileName)));
-                        } catch (IOException e) {
-                            throw new RuntimeException("[ERROR] unable to read file - " + fileName, e);
+                        } catch (Exception e) {
+                            Log.error("[ERROR] unable to read file - " + fileName, e);
                         }
                     });
         } catch (IOException e) {
