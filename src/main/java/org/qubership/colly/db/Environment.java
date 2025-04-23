@@ -1,9 +1,6 @@
 package org.qubership.colly.db;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
@@ -24,11 +21,9 @@ public class Environment extends PanacheEntity {
 
     @ManyToOne
     @JoinColumn(referencedColumnName = "name")
-    @JsonIgnore
     public Cluster cluster;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
     private List<Namespace> namespaces;
 
 
@@ -52,9 +47,5 @@ public class Environment extends PanacheEntity {
         this.namespaces.add(namespace);
     }
 
-    public String render() throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(this);
-    }
 }
 
