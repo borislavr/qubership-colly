@@ -1,11 +1,11 @@
 import React, {useEffect, useState} from "react";
-import {Box, IconButton, InputAdornment} from "@mui/material";
+import {Box, Chip, IconButton, InputAdornment} from "@mui/material";
 import TextField from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import {DataGrid} from '@mui/x-data-grid';
 import EditEnvironmentDialog from "./components/EditEnvironmentDialog";
-import {Environment, STATUS_MAPPING} from "./entities/environments";
+import {Environment, ENVIRONMENT_TYPES_MAPPING, STATUS_MAPPING} from "./entities/environments";
 
 
 export default function EnvironmentsOverview() {
@@ -26,10 +26,17 @@ export default function EnvironmentsOverview() {
 
         try {
             const formData = new FormData();
-            formData.append("name", changedEnv.name);
-            formData.append("owner", changedEnv.owner);
+            if (changedEnv.owner) {
+                formData.append("owner", changedEnv.owner);
+            }
+            if (changedEnv.description) {
+                formData.append("description", changedEnv.description);
+            }
             formData.append("status", changedEnv.status);
-            formData.append("description", changedEnv.description);
+            formData.append("type", changedEnv.type);
+            formData.append("name", changedEnv.name);
+            changedEnv.labels.forEach(label => formData.append("labels", label));
+
             const response = await fetch(`/colly/environments/${changedEnv.id}`, {
                 method: "POST",
                 body: formData
@@ -53,7 +60,9 @@ export default function EnvironmentsOverview() {
                 env.cluster?.name,
                 env.owner,
                 env.status,
+                env.labels,
                 env.description,
+                env.type,
                 ...(env.namespaces || []).map(ns => ns.name)
             ].join(" ").toLowerCase();
             return flatValues.includes(filter.toLowerCase());
@@ -65,16 +74,26 @@ export default function EnvironmentsOverview() {
             cluster: env.cluster?.name,
             owner: env.owner,
             status: STATUS_MAPPING[env.status] || env.status,
+            type: ENVIRONMENT_TYPES_MAPPING[env.type] || env.type,
+            labels: env.labels,
             description: env.description,
             raw: env
         }));
 
     const columns = [
         {field: "name", headerName: "Environment", flex: 1},
+        {field: "type", headerName: "Environment Type", flex: 1},
         {field: "namespaces", headerName: "Namespace(s)", flex: 1},
         {field: "cluster", headerName: "Cluster", flex: 1},
         {field: "owner", headerName: "Owner", flex: 1},
         {field: "status", headerName: "Status", flex: 1},
+        {
+            field: "labels", headerName: "Labels", flex: 1,
+            renderCell: (params: { row: { labels: string[]; }; }) =>
+                <>
+                    {params.row.labels.map(label => <Chip label={label}/>)}
+                </>
+        },
         {field: "description", headerName: "Description", flex: 2},
         {
             field: "actions",
@@ -102,7 +121,7 @@ export default function EnvironmentsOverview() {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon />
+                                    <SearchIcon/>
                                 </InputAdornment>
                             ),
                         },
@@ -120,7 +139,9 @@ export default function EnvironmentsOverview() {
                 />
             </Box>
 
-            {selectedEnv && <EditEnvironmentDialog environment={selectedEnv} onSave={handleSave}
+            {selectedEnv && <EditEnvironmentDialog environment={selectedEnv}
+                                                   allLabels={environments.flatMap(env => env.labels)}
+                                                   onSave={handleSave}
                                                    onClose={() => setSelectedEnv(null)}/>}
         </Box>
     );
