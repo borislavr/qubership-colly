@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Box, IconButton, InputAdornment} from "@mui/material";
+import {Box, Chip, IconButton, InputAdornment} from "@mui/material";
 import TextField from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
@@ -26,10 +26,15 @@ export default function EnvironmentsOverview() {
 
         try {
             const formData = new FormData();
-            formData.append("name", changedEnv.name);
-            formData.append("owner", changedEnv.owner);
+            if (changedEnv.owner) {
+                formData.append("owner", changedEnv.owner);
+            }
+            if (changedEnv.description) {
+                formData.append("description", changedEnv.description);
+            }
             formData.append("status", changedEnv.status);
-            formData.append("description", changedEnv.description);
+            changedEnv.labels.forEach(label => formData.append("labels", label));
+
             const response = await fetch(`/colly/environments/${changedEnv.id}`, {
                 method: "POST",
                 body: formData
@@ -53,6 +58,7 @@ export default function EnvironmentsOverview() {
                 env.cluster?.name,
                 env.owner,
                 env.status,
+                env.labels,
                 env.description,
                 ...(env.namespaces || []).map(ns => ns.name)
             ].join(" ").toLowerCase();
@@ -65,6 +71,7 @@ export default function EnvironmentsOverview() {
             cluster: env.cluster?.name,
             owner: env.owner,
             status: STATUS_MAPPING[env.status] || env.status,
+            labels: env.labels,
             description: env.description,
             raw: env
         }));
@@ -75,6 +82,13 @@ export default function EnvironmentsOverview() {
         {field: "cluster", headerName: "Cluster", flex: 1},
         {field: "owner", headerName: "Owner", flex: 1},
         {field: "status", headerName: "Status", flex: 1},
+        {
+            field: "labels", headerName: "Labels", flex: 1,
+            renderCell: (params: { row: { labels: string[]; }; }) =>
+                <>
+                    {params.row.labels.map(label => <Chip label={label}/>)}
+                </>
+        },
         {field: "description", headerName: "Description", flex: 2},
         {
             field: "actions",
@@ -102,7 +116,7 @@ export default function EnvironmentsOverview() {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon />
+                                    <SearchIcon/>
                                 </InputAdornment>
                             ),
                         },
@@ -120,7 +134,9 @@ export default function EnvironmentsOverview() {
                 />
             </Box>
 
-            {selectedEnv && <EditEnvironmentDialog environment={selectedEnv} onSave={handleSave}
+            {selectedEnv && <EditEnvironmentDialog environment={selectedEnv}
+                                                   allLabels={environments.flatMap(env => env.labels)}
+                                                   onSave={handleSave}
                                                    onClose={() => setSelectedEnv(null)}/>}
         </Box>
     );

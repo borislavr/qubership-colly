@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,6 +23,11 @@ public class Environment extends PanacheEntity {
     @ManyToOne
     @JoinColumn(referencedColumnName = "name")
     public Cluster cluster;
+
+    @ElementCollection
+    @CollectionTable(name = "environments_labels", joinColumns = @JoinColumn(name = "environment_id"))
+    @Column(name = "label")
+    private List<String> labels;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Namespace> namespaces;
@@ -47,5 +53,25 @@ public class Environment extends PanacheEntity {
         this.namespaces.add(namespace);
     }
 
+    public List<String> getLabels() {
+        return Collections.unmodifiableList(labels);
+    }
+
+    public void setLabels(List<String> labels) {
+        this.labels = new ArrayList<>(labels);
+    }
+
+    public void addLabel(String label) {
+        if (this.labels == null) {
+            this.labels = new java.util.ArrayList<>();
+        }
+        this.labels.add(label);
+    }
+
+    public void removeLabel(String label) {
+        if (this.labels != null) {
+            this.labels.remove(label);
+        }
+    }
 }
 

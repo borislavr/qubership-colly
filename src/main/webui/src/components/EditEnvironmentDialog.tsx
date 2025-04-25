@@ -1,10 +1,13 @@
 import {
+    Autocomplete,
     Button,
+    Chip,
     Dialog,
     DialogActions,
     DialogContent,
     DialogTitle,
-    FormControl, InputLabel,
+    FormControl,
+    InputLabel,
     MenuItem,
     Select,
     TextField
@@ -14,11 +17,12 @@ import {ALL_STATUSES, Environment, EnvironmentStatus, STATUS_MAPPING} from "../e
 
 type Props = {
     environment: Environment;
+    allLabels: string[];
     onClose: () => void;
     onSave: (env: Environment) => void;
 };
 
-export default function EditEnvironmentDialog({environment, onClose, onSave}: Props) {
+export default function EditEnvironmentDialog({environment, allLabels, onClose, onSave}: Props) {
 
     const [localEnv, setLocalEnv] = React.useState<Environment>(environment);
     const handleSubmit = () => {
@@ -42,16 +46,17 @@ export default function EditEnvironmentDialog({environment, onClose, onSave}: Pr
                 margin="dense"
             />
             <FormControl sx={{mt: 1, mb: 1}} fullWidth>
-            <InputLabel>Status</InputLabel>
-            <Select
+                <InputLabel>Status</InputLabel>
+                <Select
                     value={localEnv.status || ''}
                     onChange={e => setLocalEnv(prev => ({...prev, status: e.target.value as EnvironmentStatus}))}
                     fullWidth
                     label="Status"
                     margin="dense"
-            >
-                {ALL_STATUSES.map(status => <MenuItem key={status} value={status}>{STATUS_MAPPING[status]}</MenuItem>)}
-            </Select>
+                >
+                    {ALL_STATUSES.map(status => <MenuItem key={status}
+                                                          value={status}>{STATUS_MAPPING[status]}</MenuItem>)}
+                </Select>
             </FormControl>
             <TextField
                 label="Description"
@@ -60,6 +65,33 @@ export default function EditEnvironmentDialog({environment, onClose, onSave}: Pr
                 fullWidth
                 margin="dense"
             />
+            <FormControl sx={{mt: 1, mb: 1}} fullWidth>
+                <Autocomplete
+                    multiple
+                    options={allLabels}
+                    defaultValue={localEnv.labels}
+                    freeSolo
+                    renderValue={(value: readonly string[], getItemProps) =>
+                        value.map((option: string, index: number) => {
+                            const {key, ...itemProps} = getItemProps({index});
+                            return (
+                                <Chip label={option} key={key} {...itemProps} />
+                            );
+                        })
+                    }
+                    renderInput={(params) => (
+                        <TextField
+                            {...params}
+                            label="Labels"
+                            placeholder="Labels"
+                        />
+                    )}
+                    onChange={(event, value) => {
+                        setLocalEnv(prev => ({...prev, labels: value}));
+                    }}
+                />
+            </FormControl>
+
         </DialogContent>
         <DialogActions>
             <Button onClick={onClose} color="secondary">Close</Button>

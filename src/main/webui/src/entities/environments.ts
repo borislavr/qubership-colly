@@ -5,6 +5,7 @@ export type Environment = {
     cluster: { name: string };
     owner: string;
     status: EnvironmentStatus;
+    labels: string[];
     description: string;
 };
 export type EnvironmentStatus = "IN_USE" | "RESERVED" | "FREE" | "MIGRATING";
