@@ -20,6 +20,10 @@ public class Environment extends PanacheEntity {
     @Column(nullable = false)
     public EnvironmentStatus status = EnvironmentStatus.FREE;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    public EnvironmentType type = EnvironmentType.ENVIRONMENT;
+
     @ManyToOne
     @JoinColumn(referencedColumnName = "name")
     public Cluster cluster;

@@ -4,7 +4,7 @@ public enum EnvironmentStatus {
     IN_USE("In Use"),
     RESERVED("Reserved"),
     FREE("Free"),
-    MIGRATING("Migrating"),;
+    MIGRATING("Migrating");
 
     private final String displayName;
 

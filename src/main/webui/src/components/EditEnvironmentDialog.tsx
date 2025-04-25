@@ -13,7 +13,14 @@ import {
     TextField
 } from "@mui/material";
 import React from "react";
-import {ALL_STATUSES, Environment, EnvironmentStatus, STATUS_MAPPING} from "../entities/environments";
+import {
+    ALL_STATUSES,
+    ALL_TYPES,
+    Environment, ENVIRONMENT_TYPES_MAPPING,
+    EnvironmentStatus,
+    EnvironmentType,
+    STATUS_MAPPING
+} from "../entities/environments";
 
 type Props = {
     environment: Environment;
@@ -56,6 +63,19 @@ export default function EditEnvironmentDialog({environment, allLabels, onClose, 
                 >
                     {ALL_STATUSES.map(status => <MenuItem key={status}
                                                           value={status}>{STATUS_MAPPING[status]}</MenuItem>)}
+                </Select>
+            </FormControl>
+            <FormControl sx={{mt: 1, mb: 1}} fullWidth>
+                <InputLabel>Type</InputLabel>
+                <Select
+                    value={localEnv.type || ''}
+                    onChange={e => setLocalEnv(prev => ({...prev, type: e.target.value as EnvironmentType}))}
+                    fullWidth
+                    label="Environment Type"
+                    margin="dense"
+                >
+                    {ALL_TYPES.map(type => <MenuItem key={type}
+                                                          value={type}>{ENVIRONMENT_TYPES_MAPPING[type]}</MenuItem>)}
                 </Select>
             </FormControl>
             <TextField

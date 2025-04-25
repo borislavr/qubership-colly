@@ -42,8 +42,9 @@ public class ClusterResourcesRest {
                                 @FormParam("owner") String owner,
                                 @FormParam("description") String description,
                                 @FormParam("status") String status,
-                                @FormParam("labels") List<String> labels) {
-        collyStorage.saveEnvironment(id, name, owner, description, status, labels);
+                                @FormParam("labels") List<String> labels,
+                                @FormParam("type") String type) {
+        collyStorage.saveEnvironment(id, name, owner, description, status, labels, type);
     }
 
 

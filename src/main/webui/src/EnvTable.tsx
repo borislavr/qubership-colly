@@ -5,7 +5,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
 import {DataGrid} from '@mui/x-data-grid';
 import EditEnvironmentDialog from "./components/EditEnvironmentDialog";
-import {Environment, STATUS_MAPPING} from "./entities/environments";
+import {Environment, ENVIRONMENT_TYPES_MAPPING, STATUS_MAPPING} from "./entities/environments";
 
 
 export default function EnvironmentsOverview() {
@@ -33,6 +33,8 @@ export default function EnvironmentsOverview() {
                 formData.append("description", changedEnv.description);
             }
             formData.append("status", changedEnv.status);
+            formData.append("type", changedEnv.type);
+            formData.append("name", changedEnv.name);
             changedEnv.labels.forEach(label => formData.append("labels", label));
 
             const response = await fetch(`/colly/environments/${changedEnv.id}`, {
@@ -60,6 +62,7 @@ export default function EnvironmentsOverview() {
                 env.status,
                 env.labels,
                 env.description,
+                env.type,
                 ...(env.namespaces || []).map(ns => ns.name)
             ].join(" ").toLowerCase();
             return flatValues.includes(filter.toLowerCase());
@@ -71,6 +74,7 @@ export default function EnvironmentsOverview() {
             cluster: env.cluster?.name,
             owner: env.owner,
             status: STATUS_MAPPING[env.status] || env.status,
+            type: ENVIRONMENT_TYPES_MAPPING[env.type] || env.type,
             labels: env.labels,
             description: env.description,
             raw: env
@@ -78,6 +82,7 @@ export default function EnvironmentsOverview() {
 
     const columns = [
         {field: "name", headerName: "Environment", flex: 1},
+        {field: "type", headerName: "Environment Type", flex: 1},
         {field: "namespaces", headerName: "Namespace(s)", flex: 1},
         {field: "cluster", headerName: "Cluster", flex: 1},
         {field: "owner", headerName: "Owner", flex: 1},

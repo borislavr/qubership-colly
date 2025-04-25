@@ -5,6 +5,7 @@ export type Environment = {
     cluster: { name: string };
     owner: string;
     status: EnvironmentStatus;
+    type: EnvironmentType;
     labels: string[];
     description: string;
 };
@@ -18,3 +19,14 @@ export const STATUS_MAPPING = {
     MIGRATING: "Migrating",
     RESERVED: "Reserved"
 };
+
+export type EnvironmentType= "ENVIRONMENT" | "CSE_TOOLSET" | "DESIGN_TIME" | "APP_DEPLOYER" | "INFRASTRUCTURE"
+
+export const ALL_TYPES: EnvironmentType[] = ["ENVIRONMENT", "CSE_TOOLSET", "DESIGN_TIME", "APP_DEPLOYER", "INFRASTRUCTURE"];
+export const ENVIRONMENT_TYPES_MAPPING = {
+    ENVIRONMENT: "Environment",
+    CSE_TOOLSET: "CSE Toolset",
+    DESIGN_TIME: "Design Time",
+    APP_DEPLOYER: "App Deployer",
+    INFRASTRUCTURE: "Infrastructure"
+}
