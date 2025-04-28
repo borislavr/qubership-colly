@@ -40,6 +40,8 @@ public class ClusterResourcesLoader {
     ConfigMapRepository configMapRepository;
     @Inject
     PodRepository podRepository;
+    @Inject
+    EnvironmentResolverStrategy environmentResolverStrategy;
 
     public static String parseClusterName(KubeConfig kubeConfig) {
         Map<String, String> o = (Map<String, String>) kubeConfig.getClusters().getFirst();
@@ -110,7 +112,7 @@ public class ClusterResourcesLoader {
                 namespace.cluster = cluster;
                 namespaceRepository.persist(namespace);
 
-                String environmentName = v1Namespace.getMetadata().getLabels().getOrDefault("environmentName", v1Namespace.getMetadata().getName());
+                String environmentName = environmentResolverStrategy.resolveEnvironmentName(v1Namespace);
 
                 Environment environment = environmentRepository.findByNameAndCluster(environmentName, cluster.name);
                 if (environment == null) {
