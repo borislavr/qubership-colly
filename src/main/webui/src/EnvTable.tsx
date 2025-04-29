@@ -140,7 +140,7 @@ export default function EnvironmentsOverview() {
             </Box>
 
             {selectedEnv && <EditEnvironmentDialog environment={selectedEnv}
-                                                   allLabels={environments.flatMap(env => env.labels)}
+                                                   allLabels={Array.from(new Set(environments.flatMap(env => env.labels)))}
                                                    onSave={handleSave}
                                                    onClose={() => setSelectedEnv(null)}/>}
         </Box>
