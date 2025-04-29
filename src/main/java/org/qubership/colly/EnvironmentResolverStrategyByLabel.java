@@ -5,7 +5,7 @@ import io.quarkus.arc.properties.IfBuildProperty;
 import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProperty(name = "environment.resolver", stringValue = "byLabel")
+@IfBuildProperty(name = "environment.resolver.strategy", stringValue = "byLabel")
 public class EnvironmentResolverStrategyByLabel implements EnvironmentResolverStrategy {
 
     public static final String ENVIRONMENT_NAME = "environmentName";

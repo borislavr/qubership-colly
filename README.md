@@ -34,3 +34,11 @@ There are two ways to specify clusters:
     ```shell
       docker run -e ENV_INSTANCES_REPO=https://myusername:mypassword@github.com/ormig/cloud-passport-samples.git -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
     ```
+## Environment Resolver Strategy
+You can configure how to resolve an environment by namespace using two strategies:
+1. **ByName** - Uses the first part of the namespace name as the environment name if suffix is in scope of values: oss, bss, data-management, core. For example, `dev-bss` becomes `dev`.
+2. **ByLabel** - Uses the `environmentName` label from the namespace. For example, if the namespace is `dev-namespace` and the label is `environmentName=dev`, the environment name will be `dev`.
+Example:
+    ```shell
+    docker run -e ENVIRONMENT_RESOLVER_STRATEGY=byName -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
+    ```

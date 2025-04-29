@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 @Singleton
-@IfBuildProperty(name = "environment.resolver", stringValue = "byName")
+@IfBuildProperty(name = "environment.resolver.strategy", stringValue = "byName")
 public class EnvironmentResolverStrategyByParsingNamespaceName implements EnvironmentResolverStrategy {
 
     private static final String[] ACCEPTABLE_NAMESPACE_SUFFIXES = new String[]{"-bss", "-oss", "-data-management", "-core"};
