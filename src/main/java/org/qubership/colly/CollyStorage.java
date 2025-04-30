@@ -6,7 +6,7 @@ import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.qubership.colly.data.CloudPassport;
+import org.qubership.colly.cloudpassport.CloudPassport;
 import org.qubership.colly.db.Cluster;
 import org.qubership.colly.db.Environment;
 import org.qubership.colly.db.EnvironmentStatus;
