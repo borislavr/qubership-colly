@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
+import jakarta.inject.Inject;
+import org.apache.commons.compress.utils.Lists;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.qubership.colly.data.CloudData;
-import org.qubership.colly.data.CloudPassport;
-import org.qubership.colly.data.CloudPassportData;
+import org.qubership.colly.cloudpassport.CloudData;
+import org.qubership.colly.cloudpassport.CloudPassport;
+import org.qubership.colly.cloudpassport.CloudPassportData;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,39 +28,34 @@ import java.util.stream.Stream;
 public class CloudPassportLoader {
 
     private static final String CLOUD_PASSPORT_FOLDER = "cloud-passport";
-    private static final String GIT_DIRECTORY = "./git-repo";
+
+    @Inject
+    GitService gitService;
+
+    @ConfigProperty(name="cloud.passport.folder")
+    String cloudPassportFolder;
 
     @ConfigProperty(name = "env.instances.repo")
     Optional<String> gitRepoUrl;
-
 
     private void cloneGitRepository() {
         if (gitRepoUrl.isEmpty()) {
             Log.error("gitRepoUrl parameter is not set. Skipping repository cloning.");
             return;
         }
-        File directory = new File(GIT_DIRECTORY);
+        File directory = new File(cloudPassportFolder);
         if (directory.exists()) {
             Log.info("Repository was already cloned. Directory: " + directory);
             return;
         }
 
         String gitRepoUrlValue = gitRepoUrl.get();
-        try {
-            Log.info("Cloning repository: " + gitRepoUrlValue);
-            Git.cloneRepository()
-                    .setURI(gitRepoUrlValue)
-                    .setDirectory(directory)
-                    .call();
-            Log.info("Repository cloned.");
-        } catch (GitAPIException e) {
-            throw new RuntimeException("Error during clone repository: " + gitRepoUrlValue, e);
-        }
+        gitService.cloneRepository(gitRepoUrlValue, directory);
     }
 
     public List<CloudPassport> loadCloudPassports() {
         cloneGitRepository();
-        Path dir = Paths.get(GIT_DIRECTORY);
+        Path dir = Paths.get(cloudPassportFolder);
         if (!dir.toFile().exists()) {
             return Collections.emptyList();
         }
@@ -104,10 +99,10 @@ public class CloudPassportLoader {
         }
         CloudData cloud = cloudPassportData.getCloud();
         String cloudApiHost = cloud.getCloudProtocol() + "://" + cloud.getCloudApiHost() + ":" + cloud.getCloudApiPort();
-        return new CloudPassport(rootFolderName, token, cloudApiHost);
+        return new CloudPassport(rootFolderName, token, cloudApiHost, Lists.newArrayList());
     }
 
-    private String parseTokenFromCredsFile(Path path, CloudPassportData cloudPassportData) {
+    String parseTokenFromCredsFile(Path path, CloudPassportData cloudPassportData) {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
             JsonNode jsonNode = mapper.readTree(inputStream);
@@ -122,7 +117,7 @@ public class CloudPassportLoader {
         throw new RuntimeException("Can't read cloud passport data creds from " + path);
     }
 
-    private CloudPassportData parseCloudPassportDataFile(Path filePath) {
+    CloudPassportData parseCloudPassportDataFile(Path filePath) {
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         try (FileInputStream inputStream = new FileInputStream(filePath.toFile())) {

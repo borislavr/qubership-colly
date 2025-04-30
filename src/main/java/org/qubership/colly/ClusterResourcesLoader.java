@@ -14,7 +14,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.apache.commons.compress.utils.Lists;
-import org.qubership.colly.data.CloudPassport;
+import org.qubership.colly.cloudpassport.CloudPassport;
 import org.qubership.colly.db.*;
 import org.qubership.colly.storage.*;
 
