@@ -8,9 +8,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.commons.compress.utils.Lists;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.qubership.colly.cloudpassport.CloudData;
 import org.qubership.colly.cloudpassport.CloudPassport;
-import org.qubership.colly.cloudpassport.CloudPassportData;
+import org.qubership.colly.cloudpassport.CloudPassportEnvironment;
+import org.qubership.colly.cloudpassport.envgen.CloudData;
+import org.qubership.colly.cloudpassport.envgen.CloudPassportData;
+import org.qubership.colly.cloudpassport.envgen.EnvDefinition;
+import org.qubership.colly.cloudpassport.envgen.Inventory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,7 +35,7 @@ public class CloudPassportLoader {
     @Inject
     GitService gitService;
 
-    @ConfigProperty(name="cloud.passport.folder")
+    @ConfigProperty(name = "cloud.passport.folder")
     String cloudPassportFolder;
 
     @ConfigProperty(name = "env.instances.repo")
@@ -63,7 +66,7 @@ public class CloudPassportLoader {
             return paths.filter(Files::isDirectory)
                     .map(path -> path.resolve(CLOUD_PASSPORT_FOLDER))
                     .filter(Files::isDirectory)
-                    .map(path -> processYamlFilesInCloudPassportFolder(path, path.getParent().getFileName().toString()))
+                    .map(path -> processYamlFilesInClusterFolder(path, path.getParent()))
                     .filter(Objects::nonNull)
                     .toList();
         } catch (Exception e) {
@@ -73,33 +76,61 @@ public class CloudPassportLoader {
     }
 
 
-    private CloudPassport processYamlFilesInCloudPassportFolder(Path folderPath, String rootFolderName) {
-        Log.info("Loading Cloud Passport from " + folderPath);
+    private CloudPassport processYamlFilesInClusterFolder(Path cloudPassportFolderPath, Path clusterFolderPath) {
+        Log.info("Loading Cloud Passport from " + cloudPassportFolderPath);
+        String clusterName = clusterFolderPath.getFileName().toString();
+        List<CloudPassportEnvironment> environments = processEnvironmentsInClusterFolder(clusterFolderPath);
         CloudPassportData cloudPassportData;
-        try (Stream<Path> paths = Files.list(folderPath)) {
+        try (Stream<Path> paths = Files.list(cloudPassportFolderPath)) {
             cloudPassportData = paths
-                    .filter(path -> path.getFileName().toString().equals(rootFolderName + ".yml"))
+                    .filter(path -> path.getFileName().toString().equals(clusterName + ".yml"))
                     .map(this::parseCloudPassportDataFile)
                     .findFirst().orElseThrow();
         } catch (Exception e) {
-            Log.error("Error loading Cloud Passport from " + folderPath, e);
+            Log.error("Error loading Cloud Passport from " + cloudPassportFolderPath, e);
             return null;
         }
 
         String token;
-        try (Stream<Path> credsPath = Files.list(folderPath)) {
+        try (Stream<Path> credsPath = Files.list(cloudPassportFolderPath)) {
             token = credsPath
-                    .filter(path -> path.getFileName().toString().equals(rootFolderName + "-creds.yml"))
+                    .filter(path -> path.getFileName().toString().equals(clusterName + "-creds.yml"))
                     .map(path -> parseTokenFromCredsFile(path, cloudPassportData))
                     .findFirst().orElseThrow();
 
         } catch (Exception e) {
-            Log.error("Error loading Cloud Passport from " + folderPath, e);
+            Log.error("Error loading Cloud Passport from " + cloudPassportFolderPath, e);
             return null;
         }
         CloudData cloud = cloudPassportData.getCloud();
         String cloudApiHost = cloud.getCloudProtocol() + "://" + cloud.getCloudApiHost() + ":" + cloud.getCloudApiPort();
-        return new CloudPassport(rootFolderName, token, cloudApiHost, Lists.newArrayList());
+        return new CloudPassport(clusterName, token, cloudApiHost, environments);
+    }
+
+    private List<CloudPassportEnvironment> processEnvironmentsInClusterFolder(Path clusterFolderPath) {
+
+        try (Stream<Path> paths = Files.walk(clusterFolderPath)) {
+            return paths.filter(Files::isDirectory)
+                    .map(path -> path.resolve("env_definition.yml"))
+                    .filter(Files::isRegularFile)
+                    .map(this::processEnvDefinition)
+                    .toList();
+        } catch (Exception e) {
+            Log.error("Error loading Environments from " + clusterFolderPath, e);
+        }
+        return Lists.newArrayList();
+    }
+
+    private CloudPassportEnvironment processEnvDefinition(Path path) {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
+            EnvDefinition envDefinition = mapper.readValue(inputStream, EnvDefinition.class);
+            Inventory inventory = envDefinition.getInventory();
+            Log.info("Processing environment " + inventory.getEnvironmentName());
+            return new CloudPassportEnvironment(inventory.getEnvironmentName(), inventory.getDescription(), Lists.newArrayList());
+        } catch (IOException e) {
+            throw new RuntimeException("Error during read file: " + path, e);
+        }
     }
 
     String parseTokenFromCredsFile(Path path, CloudPassportData cloudPassportData) {
