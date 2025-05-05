@@ -10,10 +10,8 @@ import org.apache.commons.compress.utils.Lists;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.qubership.colly.cloudpassport.CloudPassport;
 import org.qubership.colly.cloudpassport.CloudPassportEnvironment;
-import org.qubership.colly.cloudpassport.envgen.CloudData;
-import org.qubership.colly.cloudpassport.envgen.CloudPassportData;
-import org.qubership.colly.cloudpassport.envgen.EnvDefinition;
-import org.qubership.colly.cloudpassport.envgen.Inventory;
+import org.qubership.colly.cloudpassport.CloudPassportNamespace;
+import org.qubership.colly.cloudpassport.envgen.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,8 +28,9 @@ import java.util.stream.Stream;
 @ApplicationScoped
 public class CloudPassportLoader {
 
+    public static final String ENV_DEFINITION_YML_FILENAME = "env_definition.yml";
+    public static final String NAMESPACE_YML_FILENAME = "namespace.yml";
     private static final String CLOUD_PASSPORT_FOLDER = "cloud-passport";
-
     @Inject
     GitService gitService;
 
@@ -108,10 +107,9 @@ public class CloudPassportLoader {
     }
 
     private List<CloudPassportEnvironment> processEnvironmentsInClusterFolder(Path clusterFolderPath) {
-
         try (Stream<Path> paths = Files.walk(clusterFolderPath)) {
             return paths.filter(Files::isDirectory)
-                    .map(path -> path.resolve("env_definition.yml"))
+                    .map(path -> path.resolve(ENV_DEFINITION_YML_FILENAME))
                     .filter(Files::isRegularFile)
                     .map(this::processEnvDefinition)
                     .toList();
@@ -121,15 +119,36 @@ public class CloudPassportLoader {
         return Lists.newArrayList();
     }
 
-    private CloudPassportEnvironment processEnvDefinition(Path path) {
+    private CloudPassportEnvironment processEnvDefinition(Path envDevinitionPath) {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        try (FileInputStream inputStream = new FileInputStream(path.toFile())) {
+        Path environmentPath = envDevinitionPath.getParent().getParent();
+        List<CloudPassportNamespace> namespaces = Collections.emptyList();
+        try (Stream<Path> paths = Files.walk(environmentPath)) {
+            namespaces = paths.map(path -> path.resolve(NAMESPACE_YML_FILENAME))
+                    .filter(Files::isRegularFile)
+                    .map(this::parseNamespaceFile)
+                    .toList();
+        } catch (IOException e) {
+            Log.error("Error loading environment name from " + environmentPath, e);
+        }
+        try (FileInputStream inputStream = new FileInputStream(envDevinitionPath.toFile())) {
             EnvDefinition envDefinition = mapper.readValue(inputStream, EnvDefinition.class);
             Inventory inventory = envDefinition.getInventory();
             Log.info("Processing environment " + inventory.getEnvironmentName());
-            return new CloudPassportEnvironment(inventory.getEnvironmentName(), inventory.getDescription(), Lists.newArrayList());
+            return new CloudPassportEnvironment(inventory.getEnvironmentName(), inventory.getDescription(), namespaces);
         } catch (IOException e) {
-            throw new RuntimeException("Error during read file: " + path, e);
+            throw new RuntimeException("Error during read file: " + envDevinitionPath, e);
+        }
+    }
+
+    private CloudPassportNamespace parseNamespaceFile(Path namespaceFilePath) {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        try (FileInputStream inputStream = new FileInputStream(namespaceFilePath.toFile())) {
+            Namespace namespace = mapper.readValue(inputStream, Namespace.class);
+            Log.info("Processing namespace " + namespace.getName());
+            return new CloudPassportNamespace(namespace.getName());
+        } catch (IOException e) {
+            throw new RuntimeException("Error during read file: " + namespaceFilePath, e);
         }
     }
 
