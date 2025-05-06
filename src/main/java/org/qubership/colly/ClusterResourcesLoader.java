@@ -21,7 +21,10 @@ import org.qubership.colly.db.*;
 import org.qubership.colly.storage.*;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -44,6 +47,8 @@ public class ClusterResourcesLoader {
     @Inject
     EnvironmentResolverStrategy environmentResolverStrategy;
 
+
+
     public static String parseClusterName(KubeConfig kubeConfig) {
         Map<String, String> o = (Map<String, String>) kubeConfig.getClusters().getFirst();
         String name = o.get("name");
@@ -60,7 +65,8 @@ public class ClusterResourcesLoader {
                     .setBasePath(cloudPassport.cloudApiHost())
                     .setVerifyingSsl(false)
                     .build();
-            loadClusterResources(client, cloudPassport.name(), cloudPassport.environments());
+            CoreV1Api api = new CoreV1Api(client);
+            loadClusterResources(api, cloudPassport.name(), cloudPassport.environments());
         } catch (IOException e) {
             throw new RuntimeException("Unable to create client for cluster - " + cloudPassport, e);
         }
@@ -89,10 +95,7 @@ public class ClusterResourcesLoader {
         }
     }
 
-    private void loadClusterResources(ApiClient client, String clusterName, List<CloudPassportEnvironment> environments) {
-        Configuration.setDefaultApiClient(client);
-        CoreV1Api api = new CoreV1Api();
-
+    private void loadClusterResources(CoreV1Api api, String clusterName, List<CloudPassportEnvironment> environments) {
         Cluster cluster = clusterRepository.findByName(clusterName);
         if (cluster == null) {
             cluster = new Cluster(clusterName);
