@@ -2,7 +2,6 @@ package org.qubership.colly;
 
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
@@ -48,7 +47,6 @@ public class ClusterResourcesLoader {
     EnvironmentResolverStrategy environmentResolverStrategy;
 
 
-
     public static String parseClusterName(KubeConfig kubeConfig) {
         Map<String, String> o = (Map<String, String>) kubeConfig.getClusters().getFirst();
         String name = o.get("name");
@@ -65,8 +63,9 @@ public class ClusterResourcesLoader {
                     .setBasePath(cloudPassport.cloudApiHost())
                     .setVerifyingSsl(false)
                     .build();
-            CoreV1Api api = new CoreV1Api(client);
-            loadClusterResources(api, cloudPassport.name(), cloudPassport.environments());
+            CoreV1Api coreV1Api = new CoreV1Api(client);
+            AppsV1Api appsV1Api = new AppsV1Api(client);
+            loadClusterResources(coreV1Api, appsV1Api, cloudPassport.name(), cloudPassport.environments());
         } catch (IOException e) {
             throw new RuntimeException("Unable to create client for cluster - " + cloudPassport, e);
         }
@@ -77,8 +76,8 @@ public class ClusterResourcesLoader {
         Log.info("[INFO] loading kubeconfig: " + kubeConfig.getServer());
         try {
             ApiClient client = ClientBuilder.kubeconfig(kubeConfig).build();
-            Configuration.setDefaultApiClient(client);
-            CoreV1Api api = new CoreV1Api();
+            CoreV1Api coreV1Api = new CoreV1Api(client);
+            AppsV1Api appsV1Api = new AppsV1Api(client);
             String clusterName = parseClusterName(kubeConfig);
             Cluster cluster = clusterRepository.findByName(clusterName);
             if (cluster == null) {
@@ -88,14 +87,15 @@ public class ClusterResourcesLoader {
             }
 
             //it is required to set links to cluster only if it was saved to db. so need to invoke persist two
-            cluster.environments = loadEnvironments(api, cluster);
+            cluster.environments = loadEnvironments(coreV1Api, appsV1Api, cluster);
             clusterRepository.persist(cluster);
         } catch (IOException e) {
             throw new RuntimeException("Can't load kubeconfig - " + kubeConfig.getCurrentContext(), e);
         }
     }
 
-    private void loadClusterResources(CoreV1Api api, String clusterName, List<CloudPassportEnvironment> environments) {
+    @Transactional
+    void loadClusterResources(CoreV1Api coreV1Api, AppsV1Api appsV1Api, String clusterName, List<CloudPassportEnvironment> environments) {
         Cluster cluster = clusterRepository.findByName(clusterName);
         if (cluster == null) {
             cluster = new Cluster(clusterName);
@@ -104,13 +104,13 @@ public class ClusterResourcesLoader {
         }
 
         //it is required to set links to cluster only if it was saved to db. so need to invoke persist two
-        cluster.environments = loadEnvironments(api, cluster, environments);
+        cluster.environments = loadEnvironments(coreV1Api, appsV1Api, cluster, environments);
         clusterRepository.persist(cluster);
     }
 
-    private List<Environment> loadEnvironments(CoreV1Api api, Cluster cluster, List<CloudPassportEnvironment> environments) {
+    private List<Environment> loadEnvironments(CoreV1Api coreV1Api, AppsV1Api appsV1Api, Cluster cluster, List<CloudPassportEnvironment> environments) {
 
-        CoreV1Api.APIlistNamespaceRequest apilistNamespaceRequest = api.listNamespace();
+        CoreV1Api.APIlistNamespaceRequest apilistNamespaceRequest = coreV1Api.listNamespace();
         Map<String, V1Namespace> k8sNamespaces;
         try {
             V1NamespaceList list = apilistNamespaceRequest.execute();
@@ -145,9 +145,9 @@ public class ClusterResourcesLoader {
                     environment.addNamespace(namespace);
                 }
                 namespace.name = cloudPassportNamespace.name();
-                namespace.updateDeployments(loadDeployments(v1Namespace.getMetadata().getName()));
-                namespace.updateConfigMaps(loadConfigMaps(v1Namespace.getMetadata().getName()));
-                namespace.updatePods(loadPods(v1Namespace.getMetadata().getName()));
+                namespace.updateDeployments(loadDeployments(appsV1Api, v1Namespace.getMetadata().getName()));
+                namespace.updateConfigMaps(loadConfigMaps(coreV1Api, v1Namespace.getMetadata().getName()));
+                namespace.updatePods(loadPods(coreV1Api, v1Namespace.getMetadata().getName()));
 
                 namespaceRepository.persist(namespace);
 
@@ -160,8 +160,8 @@ public class ClusterResourcesLoader {
         return envs;
     }
 
-    private List<Environment> loadEnvironments(CoreV1Api api, Cluster cluster) {
-        CoreV1Api.APIlistNamespaceRequest apilistNamespaceRequest = api.listNamespace();
+    private List<Environment> loadEnvironments(CoreV1Api coreV1Api, AppsV1Api appsV1Api, Cluster cluster) {
+        CoreV1Api.APIlistNamespaceRequest apilistNamespaceRequest = coreV1Api.listNamespace();
 
         List<Environment> environments = new ArrayList<>();
         try {
@@ -174,9 +174,9 @@ public class ClusterResourcesLoader {
                     namespace.uid = namespaceUid;
                 }
                 namespace.name = getNameSafely(v1Namespace.getMetadata());
-                namespace.updateDeployments(loadDeployments(v1Namespace.getMetadata().getName()));
-                namespace.updateConfigMaps(loadConfigMaps(v1Namespace.getMetadata().getName()));
-                namespace.updatePods(loadPods(v1Namespace.getMetadata().getName()));
+                namespace.updateDeployments(loadDeployments(appsV1Api, v1Namespace.getMetadata().getName()));
+                namespace.updateConfigMaps(loadConfigMaps(coreV1Api, v1Namespace.getMetadata().getName()));
+                namespace.updatePods(loadPods(coreV1Api, v1Namespace.getMetadata().getName()));
                 namespace.cluster = cluster;
                 namespaceRepository.persist(namespace);
 
@@ -214,9 +214,8 @@ public class ClusterResourcesLoader {
         return environments;
     }
 
-    private List<Pod> loadPods(String namespaceName) {
-        CoreV1Api api = new CoreV1Api();
-        CoreV1Api.APIlistNamespacedPodRequest request = api.listNamespacedPod(namespaceName);
+    private List<Pod> loadPods(CoreV1Api coreV1Api, String namespaceName) {
+        CoreV1Api.APIlistNamespacedPodRequest request = coreV1Api.listNamespacedPod(namespaceName);
         List<Pod> pods;
         try {
             V1PodList execute = request.execute();
@@ -243,9 +242,8 @@ public class ClusterResourcesLoader {
         return pod;
     }
 
-    private List<ConfigMap> loadConfigMaps(String namespaceName) {
-        CoreV1Api api = new CoreV1Api();
-        CoreV1Api.APIlistNamespacedConfigMapRequest request = api.listNamespacedConfigMap(namespaceName);
+    private List<ConfigMap> loadConfigMaps(CoreV1Api coreV1Api, String namespaceName) {
+        CoreV1Api.APIlistNamespacedConfigMapRequest request = coreV1Api.listNamespacedConfigMap(namespaceName);
         V1ConfigMapList configMapList;
         try {
             configMapList = request.execute();
@@ -272,9 +270,7 @@ public class ClusterResourcesLoader {
         return configMap;
     }
 
-    private List<Deployment> loadDeployments(String namespaceName) {
-
-        AppsV1Api appsV1Api = new AppsV1Api();
+    private List<Deployment> loadDeployments(AppsV1Api appsV1Api, String namespaceName) {
 
         AppsV1Api.APIlistNamespacedDeploymentRequest request = appsV1Api.listNamespacedDeployment(namespaceName);
 
