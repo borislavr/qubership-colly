@@ -4,6 +4,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,7 @@ class ClusterResourcesLoaderTest {
     }
 
     @Test
+    @TestTransaction
     void loadClusterResources_from_cloud_passport() throws ApiException {
         String namespaceName = "test-namespace";
         String clusterName = "test-cluster";
@@ -97,6 +99,7 @@ class ClusterResourcesLoaderTest {
     }
 
     @Test
+    @TestTransaction
     void load_resources_one_env_several_namespaces() throws ApiException {
         String clusterName = "cluster-3-namespaces";
         CloudPassport cloudPassport = new CloudPassport(clusterName, "42", "https://api.example.com",
@@ -118,6 +121,7 @@ class ClusterResourcesLoaderTest {
     }
 
     @Test
+    @TestTransaction
     void load_resources_twice() throws ApiException {
         String clusterName = "cluster-2-namespaces";
         CloudPassport cloudPassport = new CloudPassport(clusterName, "42", "https://api.example.com",
@@ -135,6 +139,7 @@ class ClusterResourcesLoaderTest {
     }
 
     @Test
+    @TestTransaction
     void try_to_load_namespace_from_cloud_passport_that_does_not_exist_in_k8s() throws ApiException {
         String clusterName = "cluster-without-namespace";
         CloudPassport cloudPassport = new CloudPassport(clusterName, "42", "https://api.example.com",

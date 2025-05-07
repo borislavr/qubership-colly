@@ -94,7 +94,6 @@ public class ClusterResourcesLoader {
         }
     }
 
-    @Transactional
     void loadClusterResources(CoreV1Api coreV1Api, AppsV1Api appsV1Api, String clusterName, List<CloudPassportEnvironment> environments) {
         Cluster cluster = clusterRepository.findByName(clusterName);
         if (cluster == null) {
