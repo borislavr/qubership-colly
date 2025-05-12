@@ -21,22 +21,23 @@ docker run -v ~/.kube:/kubeconfigs -e ENV_INSTANCES_REPO=https://github.com/ormi
 
 ## Clusters configuration
 There are two ways to specify clusters:
-1. Specify folder with kubeconfig files in `/kubeconfigs` and run the application. The application will read all kubeconfig files and connect to clusters. Example:
+1. (!!! deprecated for now) Specify folder with kubeconfig files in `/kubeconfigs` and run the application. The application will read all kubeconfig files and connect to clusters. Example:
    ```shell
    docker run -v ~/.kube:/kubeconfigs -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
    ```
    The application will read all kubeconfig files in `~/.kube` folder and connect to clusters.
-2. Specify `ENV_INSTANCES_REPO` environment variable with URL to git repository with Cloud Passports files. The application will clone the repository and read all cloud passports for each cluster. Example:
+2. Specify `ENV_INSTANCES_REPO` environment variable with URL to git repository with Cloud Passports files. The application will clone the repository and read all cloud passports for each cluster. In this option application read all cloud passports, environments and namespaces from the repository. Based on this information, it will create clusters, environments and namespaces in the database. Then using information from the cloud passport application will connect to each cluster and read all namespaces, deployments, pods, configmaps. Example:
     ```shell
    docker run -e ENV_INSTANCES_REPO=https://github.com/ormig/cloud-passport-samples.git -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
     ```
-    The application will clone the repository `https://github.com/ormig/cloud-passport-samples.git` and read all cloud passports for each cluster. If authentication is required to clone repository you can specify it in URL:
+    The application will clone the repository `https://github.com/ormig/cloud-passport-samples.git` and read all cloud passports for each cluster. If authentication is required to clone a repository, you can specify it in URL:
     ```shell
       docker run -e ENV_INSTANCES_REPO=https://myusername:mypassword@github.com/ormig/cloud-passport-samples.git -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
     ```
+    
 ## Environment Resolver Strategy
 You can configure how to resolve an environment by namespace using two strategies:
-1. **ByName** - Uses the first part of the namespace name as the environment name if suffix is in scope of values: oss, bss, data-management, core. For example, `dev-bss` becomes `dev`.
+1. **ByName** - Uses the first part of the namespace name as the environment name if suffix is in the scope of values: oss, bss, data-management, core. For example, `dev-bss` becomes `dev`.
 2. **ByLabel** - Uses the `environmentName` label from the namespace. For example, if the namespace is `dev-namespace` and the label is `environmentName=dev`, the environment name will be `dev`.
 Example:
     ```shell

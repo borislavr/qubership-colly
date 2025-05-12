@@ -153,6 +153,8 @@ class ClusterResourcesLoaderTest {
         assertThat(testEnv.getNamespaces(), hasItems(hasProperty("name", equalTo(NAMESPACE_NAME))));
     }
 
+    //todo add test to check changes in pods, configmaps and deployments between two loads
+
 
     private void mockConfigMaps(List<V1ConfigMap> configMap1, String targetNamespace) throws ApiException {
         V1ConfigMapList configMapList = new V1ConfigMapList().items(configMap1);
