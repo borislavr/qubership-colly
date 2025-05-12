@@ -7,6 +7,7 @@ import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.qubership.colly.cloudpassport.CloudPassport;
 import org.qubership.colly.cloudpassport.CloudPassportEnvironment;
@@ -38,22 +39,8 @@ public class CloudPassportLoader {
     String cloudPassportFolder;
 
     @ConfigProperty(name = "env.instances.repo")
-    Optional<String> gitRepoUrl;
+    Optional<List<String>> gitRepoUrls;
 
-    private void cloneGitRepository() {
-        if (gitRepoUrl.isEmpty()) {
-            Log.error("gitRepoUrl parameter is not set. Skipping repository cloning.");
-            return;
-        }
-        File directory = new File(cloudPassportFolder);
-        if (directory.exists()) {
-            Log.info("Repository was already cloned. Directory: " + directory);
-            return;
-        }
-
-        String gitRepoUrlValue = gitRepoUrl.get();
-        gitService.cloneRepository(gitRepoUrlValue, directory);
-    }
 
     public List<CloudPassport> loadCloudPassports() {
         cloneGitRepository();
@@ -74,6 +61,29 @@ public class CloudPassportLoader {
         return Collections.emptyList();
     }
 
+    private void cloneGitRepository() {
+        if (gitRepoUrls.isPresent()) {
+            Log.error("gitRepoUrl parameter is not set. Skipping repository cloning.");
+            return;
+        }
+        File directory = new File(cloudPassportFolder);
+
+        try {
+            if (directory.exists()) {
+                FileUtils.deleteDirectory(directory);
+            }
+        } catch (IOException e) {
+            Log.error("Impossible to start git cloning. Failed to clean directory: " + cloudPassportFolder, e);
+            return;
+        }
+
+        List<String> gitRepoUrlValues = gitRepoUrls.get();
+        int index = 1;
+        for (String gitRepoUrlValue : gitRepoUrlValues) {
+            gitService.cloneRepository(gitRepoUrlValue, new File(cloudPassportFolder + "/" + index));
+            index++;
+        }
+    }
 
     private CloudPassport processYamlFilesInClusterFolder(Path cloudPassportFolderPath, Path clusterFolderPath) {
         Log.info("Loading Cloud Passport from " + cloudPassportFolderPath);

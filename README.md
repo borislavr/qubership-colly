@@ -30,7 +30,11 @@ There are two ways to specify clusters:
     ```shell
    docker run -e ENV_INSTANCES_REPO=https://github.com/ormig/cloud-passport-samples.git -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
     ```
-    The application will clone the repository `https://github.com/ormig/cloud-passport-samples.git` and read all cloud passports for each cluster. If authentication is required to clone a repository, you can specify it in URL:
+   multiple repositories can be specified using comma-separated values. For example:
+    ```shell
+   docker run -e ENV_INSTANCES_REPO=https://github.com/repo1.git,https://github.com/repo2.git -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
+    ```
+   The application will clone the repository `https://github.com/ormig/cloud-passport-samples.git` and read all cloud passports for each cluster. If authentication is required to clone a repository, you can specify it in URL:
     ```shell
       docker run -e ENV_INSTANCES_REPO=https://myusername:mypassword@github.com/ormig/cloud-passport-samples.git -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
     ```
