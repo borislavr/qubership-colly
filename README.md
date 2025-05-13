@@ -1,16 +1,31 @@
 # qubership-colly
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework and React.
+The tool is designed to track the usage of environments within clusters. This project uses Quarkus, the Supersonic Subatomic Java Framework and React.
 
-## Goal
+## Features
 
-- The tool is designed to track the usage of clusters and environments within clusters.
+- The tool is designed to track the usage of environments within clusters.
 - Support several clusters
+- Support Cloud Passport concept
 - ability to group several namespaces into one environment
 - show additional custom UI parameters for the environment (owner, description, status)
 - (todo) ability to show information (name, version) about deployed helm packages
     - (optional) support argo packages
 - (todo) collect resources and metrics from kubernetes and monitoring
+
+
+## Environment visualization details
+![img.png](img.png)
+Columns:
+- **Environment** - Name of the environment. Information is taken from the cloud passport configuration.
+- **Environment Type** - Type of the environment. Type is calculated based on namespace labels. 
+- **Namespace(s)** - Name of the namespace(s). Information is taken from the cloud passport configuration.
+- **Cluster** - Name of the cluster. Information is taken from the cloud passport configuration.
+- **Owner** - Owner of the environment. Owner can be specified in Colly and persisted in the database. 
+- **Status** - Status of the environment. Status can be specified in Colly and persisted in the database.
+- **Labels** - Labels of the environment. Labels can be specified in Colly and persisted in the database.
+- **Description** - Description of the environment. Information is taken from the cloud passport configuration and also can be specified in Colly.
+
 
 
 ## Run latest version in Docker
