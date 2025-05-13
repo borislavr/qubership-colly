@@ -20,16 +20,20 @@ import org.qubership.colly.db.*;
 import org.qubership.colly.storage.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
 @ApplicationScoped
 public class ClusterResourcesLoader {
+
+    static final String LABEL_DISCOVERY_CLI_IO_LEVEL = "discovery.cli.io/level";
+    static final String LABEL_DISCOVERY_CLI_IO_TYPE = "discovery.cli.io/type";
+    static final String LABEL_LEVEL_INFRA = "infra";
+    static final String LABEL_LEVEL_APPS = "apps";
+    static final String LABEL_TYPE_CORE = "core";
+    static final String LABEL_TYPE_CSE_TOOLSET = "cse-toolset";
 
     @Inject
     NamespaceRepository namespaceRepository;
@@ -53,6 +57,7 @@ public class ClusterResourcesLoader {
         Log.info("[INFO] true cluster name: " + name);
         return name;
     }
+
 
     @Transactional
     public void loadClusterResources(CloudPassport cloudPassport) {
@@ -127,7 +132,7 @@ public class ClusterResourcesLoader {
                 environment.cluster = cluster;
                 environmentRepository.persist(environment);
             }
-
+            EnvironmentType environmentType = EnvironmentType.UNDEFINED;
             for (CloudPassportNamespace cloudPassportNamespace : cloudPassportEnvironment.namespaceDtos()) {
                 V1Namespace v1Namespace = k8sNamespaces.get(cloudPassportNamespace.name());
                 if (v1Namespace == null) {
@@ -147,11 +152,11 @@ public class ClusterResourcesLoader {
                 namespace.updateDeployments(loadDeployments(appsV1Api, v1Namespace.getMetadata().getName()));
                 namespace.updateConfigMaps(loadConfigMaps(coreV1Api, v1Namespace.getMetadata().getName()));
                 namespace.updatePods(loadPods(coreV1Api, v1Namespace.getMetadata().getName()));
-
+                environmentType = calculateEnvironmentType(v1Namespace);
                 namespaceRepository.persist(namespace);
-
-                environmentRepository.persist(environment);
             }
+            environment.type = environmentType;
+            environmentRepository.persist(environment);
 
             envs.add(environment);
 
@@ -305,5 +310,24 @@ public class ClusterResourcesLoader {
             return "<empty_name>";
         }
         return meta.getName();
+    }
+
+    private EnvironmentType calculateEnvironmentType(V1Namespace v1Namespace) {
+        Map<String, String> labels = Objects.requireNonNull(v1Namespace.getMetadata()).getLabels();
+        String levelValue = labels.get(LABEL_DISCOVERY_CLI_IO_LEVEL);
+        if (LABEL_LEVEL_APPS.equals(levelValue)) {
+            String typeValue = labels.get(LABEL_DISCOVERY_CLI_IO_TYPE);
+            if (LABEL_TYPE_CORE.equals(typeValue)) {
+                return EnvironmentType.ENVIRONMENT;
+            }
+            if (LABEL_TYPE_CSE_TOOLSET.equals(typeValue)) {
+                return EnvironmentType.CSE_TOOLSET;
+            }
+            return EnvironmentType.ENVIRONMENT;
+        }
+        if (LABEL_LEVEL_INFRA.equals(levelValue)) {
+            return EnvironmentType.INFRASTRUCTURE;
+        }
+        return EnvironmentType.UNDEFINED;
     }
 }
