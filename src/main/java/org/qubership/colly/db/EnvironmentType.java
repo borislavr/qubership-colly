@@ -5,7 +5,8 @@ public enum EnvironmentType {
     CSE_TOOLSET("CSE Toolset"),
     DESIGN_TIME("Design Time"),
     APP_DEPLOYER("App Deployer"),
-    INFRASTRUCTURE("Infrastructure")
+    INFRASTRUCTURE("Infrastructure"),
+    UNDEFINED("Undefined")
     ;
 
     private final String displayName;

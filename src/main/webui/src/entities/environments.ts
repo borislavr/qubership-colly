@@ -20,13 +20,14 @@ export const STATUS_MAPPING = {
     RESERVED: "Reserved"
 };
 
-export type EnvironmentType= "ENVIRONMENT" | "CSE_TOOLSET" | "DESIGN_TIME" | "APP_DEPLOYER" | "INFRASTRUCTURE"
+export type EnvironmentType= "ENVIRONMENT" | "CSE_TOOLSET" | "DESIGN_TIME" | "APP_DEPLOYER" | "INFRASTRUCTURE" | "UNDEFINED"
 
-export const ALL_TYPES: EnvironmentType[] = ["ENVIRONMENT", "CSE_TOOLSET", "DESIGN_TIME", "APP_DEPLOYER", "INFRASTRUCTURE"];
+export const ALL_TYPES: EnvironmentType[] = ["ENVIRONMENT", "CSE_TOOLSET", "DESIGN_TIME", "APP_DEPLOYER", "INFRASTRUCTURE", "UNDEFINED"];
 export const ENVIRONMENT_TYPES_MAPPING = {
     ENVIRONMENT: "Environment",
     CSE_TOOLSET: "CSE Toolset",
     DESIGN_TIME: "Design Time",
     APP_DEPLOYER: "App Deployer",
-    INFRASTRUCTURE: "Infrastructure"
+    INFRASTRUCTURE: "Infrastructure",
+    UNDEFINED: "Undefined"
 }

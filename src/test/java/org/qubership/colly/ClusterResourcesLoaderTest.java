@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.qubership.colly.ClusterResourcesLoader.*;
 
 @QuarkusTest
 class ClusterResourcesLoaderTest {
@@ -80,7 +81,10 @@ class ClusterResourcesLoaderTest {
         clusterResourcesLoader.loadClusterResources(coreV1Api, appsV1Api, cloudPassport.name(), cloudPassport.environments());
 
         Environment testEnv = environmentRepository.findByNameAndCluster("env-test", CLUSTER_NAME);
-        assertThat(testEnv, hasProperty("name", equalTo("env-test")));
+        assertThat(testEnv, allOf(
+                hasProperty("name", equalTo("env-test")),
+                hasProperty("description", equalTo("some env for tests")),
+                hasProperty("type", equalTo(EnvironmentType.ENVIRONMENT))));
 
         assertThat(testEnv.cluster, hasProperty("name", equalTo(CLUSTER_NAME)));
 
@@ -179,7 +183,14 @@ class ClusterResourcesLoaderTest {
     }
 
     private void mockNamespaceLoading(String clusterName, List<String> namespaceNames) throws ApiException {
-        List<V1Namespace> v1Namespaces = namespaceNames.stream().map(namespaceName -> new V1Namespace().metadata(new V1ObjectMeta().name(namespaceName).uid(namespaceName + clusterName))).toList();
+        List<V1Namespace> v1Namespaces = namespaceNames
+                .stream()
+                .map(namespaceName -> new V1Namespace().metadata(new V1ObjectMeta()
+                        .name(namespaceName)
+                        .uid(namespaceName + clusterName)
+                        .labels(Map.of(LABEL_DISCOVERY_CLI_IO_LEVEL, LABEL_LEVEL_APPS,
+                                LABEL_DISCOVERY_CLI_IO_TYPE, LABEL_TYPE_CORE))))
+                .toList();
         V1NamespaceList nsList = new V1NamespaceList().items(v1Namespaces);
 
         CoreV1Api.APIlistNamespaceRequest nsRequest = mock(CoreV1Api.APIlistNamespaceRequest.class);
