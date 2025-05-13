@@ -62,7 +62,7 @@ public class CloudPassportLoader {
     }
 
     private void cloneGitRepository() {
-        if (gitRepoUrls.isPresent()) {
+        if (gitRepoUrls.isEmpty()) {
             Log.error("gitRepoUrl parameter is not set. Skipping repository cloning.");
             return;
         }
