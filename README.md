@@ -34,6 +34,11 @@ docker run -d --rm --name colly-db -p 5432:5432 -e POSTGRES_USER=postgres -e POS
 docker run -v ~/.kube:/kubeconfigs -e ENV_INSTANCES_REPO=https://github.com/ormig/cloud-passport-samples.git -i --rm -p 8080:8080 ghcr.io/netcracker/qubership-colly:latest
 ```
 
+## Run using helm 
+```shell script
+
+helm install qubership-colly netcracker/qubership-colly --set colly.db.password=<DB_PASSWORD> --set colly.db.user=<DB_USERNAMER> --set colly.db.host=<DB_HOST>  
+```
 ## Clusters configuration
 There are two ways to specify clusters:
 1. (!!! deprecated for now) Specify folder with kubeconfig files in `/kubeconfigs` and run the application. The application will read all kubeconfig files and connect to clusters. Example:
