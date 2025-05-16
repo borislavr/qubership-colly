@@ -85,7 +85,7 @@ jobs:
         uses: netcracker/qubership-workflow-hub/actions/helm-charts-release@main
         with:
           release-version: ${{ inputs.release }}
-          config-file: .github/helm-charts-release-config.yaml
+          config-file: .github/helm-chart-release-config.yaml
         env:
           ${{ insert }}: ${{ vars }}
 
