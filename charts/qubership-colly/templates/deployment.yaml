@@ -3,22 +3,22 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/name: {{ .Values.colly.name }}
-    app.kubernetes.io/version: {{ .Values.colly.version }}
-  name: {{ .Values.colly.name }}
+    app.kubernetes.io/name: {{ .Values.colly.serviceName }}
+    app.kubernetes.io/version: {{ .Chart.Version }}
+  name: {{ .Values.colly.serviceName }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.colly.name }}
-      app.kubernetes.io/version: {{ .Values.colly.version }}
+      app.kubernetes.io/name: {{ .Values.colly.serviceName }}
+      app.kubernetes.io/version: {{ .Chart.Version }}
   template:
     metadata:
       annotations:
         app.quarkus.io/quarkus-version: 3.18.2
       labels:
-        app.kubernetes.io/name: {{ .Values.colly.name }}
-        app.kubernetes.io/version: {{ .Values.colly.version }}
+        app.kubernetes.io/name: {{ .Values.colly.serviceName }}
+        app.kubernetes.io/version: {{ .Chart.Version }}
     spec:
       containers:
         - env:
@@ -32,12 +32,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: username
-                  name: {{ .Values.colly.name }}-secret
+                  name: {{ .Values.colly.serviceName }}-secret
             - name: QUARKUS_DATASOURCE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   key: password
-                  name: {{ .Values.colly.name }}-secret
+                  name: {{ .Values.colly.serviceName }}-secret
             - name: ENV_INSTANCES_REPO
               value: {{ .Values.colly.instancesRepo }}
           image: {{ .Values.colly.image }}
