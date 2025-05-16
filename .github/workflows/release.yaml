@@ -15,7 +15,7 @@
 # - GitHub release drafter configuration file: `.github/release-drafter-config.yml`
 #   Example: config/examples/release-drafter-config.yml
 
-name: Helm Charts Release
+name: Create Release
 on:
   workflow_dispatch:
     inputs:
@@ -28,7 +28,7 @@ permissions:
   packages: write
 run-name: ${{ github.repository }} Release ${{ github.event.inputs.release }}
 concurrency:
-  group: 'helm-charts-release'
+  group: 'release'
   cancel-in-progress: false
 jobs:
   check-tag:
@@ -51,32 +51,13 @@ jobs:
     with:
       maven-command: "--batch-mode clean package"
       upload-artifact: false
-      artifact-id: "test-${{ github.event.repository.name }}"
       ref: ${{ github.head_ref }}
     secrets:
       maven-token: ${{ secrets.GITHUB_TOKEN }}
 
-#  docker-check-build:
-#    needs: [check-tag, mvn-check-build]
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Docker check build
-#        id: docker-check-build
-#        uses: netcracker/qubership-workflow-hub/actions/docker-action@main
-#        with:
-#          ref: ${{ github.ref }}
-#          dry-run: true
-#          download-artifact: true
-#          custom-image-name: "test-${{ github.event.repository.name }}"
-#          tags: "test-${{ inputs.release }}"
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   chart-release:
     needs: [mvn-check-build, check-tag]
     runs-on: ubuntu-latest
-    outputs:
-      images-versions: ${{ steps.update-versions.outputs.images-versions }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -90,9 +71,6 @@ jobs:
         env:
           ${{ insert }}: ${{ vars }}
 
-      - name: "Debug"
-        run: |
-          echo "Images versions: ${{ steps.update-versions.outputs.images-versions }}"
   tag:
     needs: [chart-release]
     runs-on: ubuntu-latest
@@ -119,17 +97,13 @@ jobs:
     needs: [tag, mvn-build, chart-release]
     runs-on: ubuntu-latest
     steps:
-      - name: Get version for current component
-        id: get-version
-        run: |
-          echo "IMAGE_VERSION=${{ inputs.release }}" >> $GITHUB_ENV
       - name: Docker build
         uses: netcracker/qubership-workflow-hub/actions/docker-action@main
         with:
           ref: v${{ inputs.release }}
           download-artifact: true
           dry-run: false
-          tags: "${{ env.IMAGE_VERSION }},latest"
+          tags: "${{ inputs.release }}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
