@@ -122,7 +122,7 @@ jobs:
       - name: Get version for current component
         id: get-version
         run: |
-          echo "IMAGE_VERSION=${{ fromJson(needs.chart-release.outputs.images-versions) || inputs.release }}" >> $GITHUB_ENV
+          echo "IMAGE_VERSION=${{ inputs.release }}" >> $GITHUB_ENV
       - name: Docker build
         uses: netcracker/qubership-workflow-hub/actions/docker-action@main
         with:
