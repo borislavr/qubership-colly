@@ -152,7 +152,7 @@ jobs:
       - name: Archive and Upload Assets
         uses: netcracker/qubership-workflow-hub/actions/archive-and-upload-assets@main
         with:
-          config-path: './.github/assets-config.yml'
+          config-path: '.github/assets-config.yaml'
           dist-path: './dist'
           upload: true
           ref: v${{ inputs.release }}
