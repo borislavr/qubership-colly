@@ -2,10 +2,10 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ .Values.colly.name }}-http
+  name: {{ .Values.colly.serviceName }}-http
   labels:
-    name: {{ .Values.colly.name }}
-    app.kubernetes.io/name: {{ .Values.colly.name }}
+    name: {{ .Values.colly.serviceName }}
+    app.kubernetes.io/name: {{ .Values.colly.serviceName }}
   {{- if .Values.colly.ingress.http.annotations }}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
@@ -27,6 +27,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.colly.name }}-service
+                name: {{ .Values.colly.serviceName }}-service
                 port:
                   number: 80

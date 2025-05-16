@@ -1,8 +1,7 @@
 ---
 colly:
   image: ghcr.io/netcracker/qubership-colly:latest
-  version: 1.0.0-SNAPSHOT
-  name: qubership-colly
+  serviceName: qubership-colly
   instancesRepo: https://github.com/ormig/cloud-passport-samples.git
   db:
     host:
