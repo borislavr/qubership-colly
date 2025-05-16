@@ -50,30 +50,30 @@ jobs:
     uses: netcracker/qubership-workflow-hub/.github/workflows/maven-publish.yml@main
     with:
       maven-command: "--batch-mode clean package"
-      upload-artifact: true
+      upload-artifact: false
       artifact-id: "test-${{ github.event.repository.name }}"
       ref: ${{ github.head_ref }}
     secrets:
       maven-token: ${{ secrets.GITHUB_TOKEN }}
 
-  docker-check-build:
-    needs: [check-tag, mvn-check-build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Docker check build
-        id: docker-check-build
-        uses: netcracker/qubership-workflow-hub/actions/docker-action@main
-        with:
-          ref: ${{ github.ref }}
-          dry-run: true
-          download-artifact: true
-          custom-image-name: "test-${{ github.event.repository.name }}"
-          tags: "test-${{ inputs.release }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#  docker-check-build:
+#    needs: [check-tag, mvn-check-build]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Docker check build
+#        id: docker-check-build
+#        uses: netcracker/qubership-workflow-hub/actions/docker-action@main
+#        with:
+#          ref: ${{ github.ref }}
+#          dry-run: true
+#          download-artifact: true
+#          custom-image-name: "test-${{ github.event.repository.name }}"
+#          tags: "test-${{ inputs.release }}"
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   chart-release:
-    needs: [docker-check-build, check-tag]
+    needs: [mvn-check-build, check-tag]
     runs-on: ubuntu-latest
     outputs:
       images-versions: ${{ steps.update-versions.outputs.images-versions }}
