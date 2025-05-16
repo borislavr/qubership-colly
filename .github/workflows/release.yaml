@@ -127,7 +127,7 @@ jobs:
         uses: netcracker/qubership-workflow-hub/actions/docker-action@main
         with:
           ref: v${{ inputs.release }}
-          download-artifact: false
+          download-artifact: true
           dry-run: false
           tags: "${{ env.IMAGE_VERSION }},latest"
         env:
