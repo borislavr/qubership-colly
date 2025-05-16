@@ -67,6 +67,7 @@ jobs:
           ref: ${{ github.ref }}
           dry-run: true
           download-artifact: true
+          custom-image-name: "test-${{ github.event.repository.name }}"
           tags: "test-${{ inputs.release }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
