@@ -5,18 +5,19 @@ metadata:
   labels:
     app.kubernetes.io/name: {{ .Values.colly.serviceName }}
     app.kubernetes.io/version: {{ .Chart.Version }}
+    name: {{ .Values.colly.serviceName }}
   name: {{ .Values.colly.serviceName }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.colly.serviceName }}
-      app.kubernetes.io/version: {{ .Chart.Version }}
+      name: {{ .Values.colly.serviceName }}
   template:
     metadata:
       annotations:
         app.quarkus.io/quarkus-version: 3.18.2
       labels:
+        name: {{ .Values.colly.serviceName }}
         app.kubernetes.io/name: {{ .Values.colly.serviceName }}
         app.kubernetes.io/version: {{ .Chart.Version }}
     spec:
@@ -40,10 +41,12 @@ spec:
                   name: {{ .Values.colly.serviceName }}-secret
             - name: ENV_INSTANCES_REPO
               value: {{ .Values.colly.instancesRepo }}
+            - name: CRON_SCHEDULE
+              value: {{ .Values.colly.cronSchedule }}
           image: {{ .Values.colly.image }}
           imagePullPolicy: Always
           name: qubership-colly
           ports:
             - containerPort: {{ .Values.colly.ports.http }}
-              name: http
+              name: web
               protocol: TCP
