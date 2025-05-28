@@ -55,6 +55,8 @@ spec:
                 secretKeyRef:
                   key: idpClientSecret
                   name: {{ .Values.colly.serviceName }}-secret
+            - name: QUARKUS_OIDC_TLS_VERIFICATION
+              value: none
           image: {{ .Values.colly.image }}
           imagePullPolicy: Always
           name: qubership-colly
