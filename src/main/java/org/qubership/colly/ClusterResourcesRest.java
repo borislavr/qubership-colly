@@ -54,12 +54,9 @@ public class ClusterResourcesRest {
                                 @FormParam("description") String description,
                                 @FormParam("status") String status,
                                 @FormParam("labels") List<String> labels,
-                                @FormParam("type") String type) {
-        if (!securityIdentity.hasRole("admin")) {
-            Log.debug("Current user is: " + securityIdentity.getPrincipal().getName());
-            throw new NotAuthorizedException("User "+ securityIdentity.getPrincipal().getName() +" is not authorized to change Environment");
-        };
-        collyStorage.saveEnvironment(id, name, owner, description, status, labels, type);
+                                @FormParam("type") String type,
+                                @FormParam("team") String team) {
+        collyStorage.saveEnvironment(id, name, owner, description, status, labels, type, team);
     }
 
 
