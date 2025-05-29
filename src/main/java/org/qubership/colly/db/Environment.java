@@ -15,6 +15,7 @@ public class Environment extends PanacheEntity {
 
     public String name;
     public String owner;
+    public String team;
     public String description;
 
     @Enumerated(EnumType.STRING)
@@ -71,6 +72,8 @@ public class Environment extends PanacheEntity {
     public void setLabels(List<String> labels) {
         this.labels = new ArrayList<>(labels);
     }
+
+
 
     public void addLabel(String label) {
         if (this.labels == null) {

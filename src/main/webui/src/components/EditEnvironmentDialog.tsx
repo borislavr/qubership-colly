@@ -52,6 +52,13 @@ export default function EditEnvironmentDialog({environment, allLabels, onClose, 
                 fullWidth
                 margin="dense"
             />
+            <TextField
+                label="Team"
+                value={localEnv.team || ''}
+                onChange={e => setLocalEnv(prevState => ({...prevState, team: e.target.value}))}
+                fullWidth
+                margin="dense"
+            />
             <FormControl sx={{mt: 1, mb: 1}} fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select

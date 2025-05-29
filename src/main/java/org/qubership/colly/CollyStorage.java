@@ -64,7 +64,7 @@ public class CollyStorage {
 
 
     @Transactional
-    public void saveEnvironment(String id, String name, String owner, String description, String status, List<String> labels, String type) {
+    public void saveEnvironment(String id, String name, String owner, String description, String status, List<String> labels, String type, String team) {
         Environment environment = environmentRepository.findById(Long.valueOf(id));
         if (environment == null) {
             throw new RuntimeException("Environment with id " + id + " not found");
@@ -75,6 +75,7 @@ public class CollyStorage {
         environment.description = description;
         environment.status = EnvironmentStatus.fromString(status);
         environment.type = EnvironmentType.fromString(type);
+        environment.team = team;
         environment.setLabels(labels);
         environmentRepository.persist(environment);
     }

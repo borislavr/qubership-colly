@@ -49,6 +49,9 @@ export default function EnvironmentsOverview() {
             if (changedEnv.owner) {
                 formData.append("owner", changedEnv.owner);
             }
+            if (changedEnv.team) {
+                formData.append("team", changedEnv.team);
+            }
             if (changedEnv.description) {
                 formData.append("description", changedEnv.description);
             }
@@ -79,6 +82,7 @@ export default function EnvironmentsOverview() {
         namespaces: env.namespaces.map(ns => ns.name).join(", "),
         cluster: env.cluster?.name,
         owner: env.owner,
+        team: env.team,
         status: STATUS_MAPPING[env.status] || env.status,
         type: ENVIRONMENT_TYPES_MAPPING[env.type] || env.type,
         labels: env.labels,
@@ -104,6 +108,7 @@ export default function EnvironmentsOverview() {
         {field: "namespaces", headerName: "Namespace(s)", flex: 1},
         {field: "cluster", headerName: "Cluster", flex: 1},
         {field: "owner", headerName: "Owner", flex: 1},
+        {field: "team", headerName: "Team", flex: 1},
         {field: "status", headerName: "Status", flex: 1},
         {
             field: "labels", headerName: "Labels", flex: 1,
