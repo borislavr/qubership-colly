@@ -135,16 +135,19 @@ public class ClusterResourcesLoader {
         for (CloudPassportEnvironment cloudPassportEnvironment : environments) {
             Environment environment = environmentRepository.findByNameAndCluster(cloudPassportEnvironment.name(), cluster.name);
             Log.info("Start working with env = " + cloudPassportEnvironment.name());
+            EnvironmentType environmentType;
             if (environment == null) {
                 environment = new Environment(cloudPassportEnvironment.name());
                 environment.description = cloudPassportEnvironment.description();
                 environment.cluster = cluster;
+                environmentType = EnvironmentType.UNDEFINED;
                 environmentRepository.persist(environment);
                 Log.info("env created in db: " + environment.name);
             } else {
+                environmentType = environment.type;
                 Log.info("environment " + environment.name + " exists");
             }
-            EnvironmentType environmentType = EnvironmentType.UNDEFINED;
+
             for (CloudPassportNamespace cloudPassportNamespace : cloudPassportEnvironment.namespaceDtos()) {
                 V1Namespace v1Namespace = k8sNamespaces.get(cloudPassportNamespace.name());
                 if (v1Namespace == null) {
@@ -164,7 +167,7 @@ public class ClusterResourcesLoader {
 //                namespace.updateDeployments(loadDeployments(appsV1Api, v1Namespace.getMetadata().getName()));
 //                namespace.updateConfigMaps(loadConfigMaps(coreV1Api, v1Namespace.getMetadata().getName()));
 //                namespace.updatePods(loadPods(coreV1Api, v1Namespace.getMetadata().getName()));
-                environmentType = calculateEnvironmentType(v1Namespace);
+                environmentType = calculateEnvironmentType(v1Namespace, environmentType);
                 namespaceRepository.persist(namespace);
             }
             environment.monitoringData = monitoringService.loadMonitoringData(monitoringUri, environment.getNamespaces().stream().map(namespace -> namespace.name).toList());
@@ -325,7 +328,7 @@ public class ClusterResourcesLoader {
         return meta.getName();
     }
 
-    private EnvironmentType calculateEnvironmentType(V1Namespace v1Namespace) {
+    private EnvironmentType calculateEnvironmentType(V1Namespace v1Namespace, EnvironmentType defaultEnvType) {
         Map<String, String> labels = Objects.requireNonNull(v1Namespace.getMetadata()).getLabels();
         String levelValue = labels.get(LABEL_DISCOVERY_CLI_IO_LEVEL);
         if (LABEL_LEVEL_APPS.equals(levelValue)) {
@@ -341,6 +344,6 @@ public class ClusterResourcesLoader {
         if (LABEL_LEVEL_INFRA.equals(levelValue)) {
             return EnvironmentType.INFRASTRUCTURE;
         }
-        return EnvironmentType.UNDEFINED;
+        return defaultEnvType;
     }
 }
