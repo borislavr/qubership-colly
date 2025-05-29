@@ -162,12 +162,12 @@ public class ClusterResourcesLoader {
                     namespace.cluster = cluster;
                     namespace.environment = environment;
                     environment.addNamespace(namespace);
+                    environmentType = calculateEnvironmentType(v1Namespace, environmentType);
                 }
                 namespace.name = cloudPassportNamespace.name();
 //                namespace.updateDeployments(loadDeployments(appsV1Api, v1Namespace.getMetadata().getName()));
 //                namespace.updateConfigMaps(loadConfigMaps(coreV1Api, v1Namespace.getMetadata().getName()));
 //                namespace.updatePods(loadPods(coreV1Api, v1Namespace.getMetadata().getName()));
-                environmentType = calculateEnvironmentType(v1Namespace, environmentType);
                 namespaceRepository.persist(namespace);
             }
             environment.monitoringData = monitoringService.loadMonitoringData(monitoringUri, environment.getNamespaces().stream().map(namespace -> namespace.name).toList());
