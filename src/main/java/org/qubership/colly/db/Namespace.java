@@ -2,9 +2,10 @@ package org.qubership.colly.db;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
-import jakarta.persistence.*;
-
-import java.util.List;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 
 @Entity(name = "namespaces")
 public class Namespace extends PanacheEntityBase {
@@ -21,26 +22,4 @@ public class Namespace extends PanacheEntityBase {
     @JsonIgnore
     public Environment environment;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    public List<Deployment> deployments = new java.util.ArrayList<>();
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    public List<ConfigMap> configMaps = new java.util.ArrayList<>();
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    public List<Pod> pods = new java.util.ArrayList<>();
-
-
-    public void updateDeployments(List<Deployment> deployments) {
-        this.deployments.clear();
-        this.deployments.addAll(deployments);
-    }
-
-    public void updateConfigMaps(List<ConfigMap> configMaps) {
-        this.configMaps.clear();
-        this.configMaps.addAll(configMaps);
-    }
-
-    public void updatePods(List<Pod> pods) {
-        this.pods.clear();
-        this.pods.addAll(pods);
-    }
 }
