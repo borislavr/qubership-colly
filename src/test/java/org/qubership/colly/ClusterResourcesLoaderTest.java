@@ -2,7 +2,6 @@ package org.qubership.colly;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
 import io.quarkiverse.wiremock.devservice.ConnectWireMock;
@@ -17,9 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.qubership.colly.cloudpassport.CloudPassport;
 import org.qubership.colly.cloudpassport.CloudPassportEnvironment;
 import org.qubership.colly.cloudpassport.CloudPassportNamespace;
-import org.qubership.colly.db.*;
-import org.qubership.colly.storage.EnvironmentRepository;
-import org.qubership.colly.storage.NamespaceRepository;
+import org.qubership.colly.db.data.Environment;
+import org.qubership.colly.db.data.EnvironmentType;
+import org.qubership.colly.db.data.Namespace;
+import org.qubership.colly.db.EnvironmentRepository;
+import org.qubership.colly.db.NamespaceRepository;
 
 import java.net.URI;
 import java.util.List;
@@ -36,10 +37,14 @@ import static org.qubership.colly.ClusterResourcesLoader.*;
 @ConnectWireMock
 class ClusterResourcesLoaderTest {
 
-    public static final String NAMESPACE_NAME = "namespace1";
-    public static final String NAMESPACE_NAME_2 = "namespace2";
-    public static final String NAMESPACE_NAME_3 = "namespace3";
-    public static final String CLUSTER_NAME = "test-cluster";
+    private static final String ENV_1 = "env-1";
+    private static final String NAMESPACE_NAME = "namespace1";
+    private static final String NAMESPACE_NAME_2 = "namespace2";
+    private static final String NAMESPACE_NAME_3 = "namespace3";
+    private static final String CLUSTER_NAME = "test-cluster";
+    private static final CloudPassport CLOUD_PASSPORT = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
+            List.of(new CloudPassportEnvironment(ENV_1, "some env for tests",
+                    List.of(new CloudPassportNamespace(NAMESPACE_NAME)))), null);
     @Inject
     ClusterResourcesLoader clusterResourcesLoader;
 
@@ -53,12 +58,10 @@ class ClusterResourcesLoaderTest {
     Integer port;
 
     CoreV1Api coreV1Api;
-    AppsV1Api appsV1Api;
 
     @BeforeEach
     void setUp() throws ApiException {
         coreV1Api = mock(CoreV1Api.class);
-        appsV1Api = mock(AppsV1Api.class);
         mockAllNamespaceResources();
         wiremock.register(WireMock.get(WireMock.urlPathMatching("/api/v1/query"))
                 .willReturn(WireMock.aResponse()
@@ -75,25 +78,13 @@ class ClusterResourcesLoaderTest {
                         List.of(new CloudPassportNamespace(NAMESPACE_NAME)))), URI.create("http://localhost:" + port));
         mockNamespaceLoading("clusterName", List.of(NAMESPACE_NAME));
 
-
-        V1Deployment dep = new V1Deployment()
-                .metadata(new V1ObjectMeta().name("dep-1").uid("dep-uid"))
-                .spec(new V1DeploymentSpec().replicas(2));
-        mockDeploymentsLoading(List.of(dep), NAMESPACE_NAME);
-
-        V1Pod pod = new V1Pod()
-                .metadata(new V1ObjectMeta().name("pod-1").uid("pod-uid"))
-                .status(new V1PodStatus().phase("RUNNING"))
-                .spec(new V1PodSpec().containers(List.of(new V1Container().name("container-1"))));
-        mockPodsLoading(List.of(pod), NAMESPACE_NAME);
-
         V1ConfigMap configMap = new V1ConfigMap()
                 .metadata(new V1ObjectMeta().name("sd-versions").uid("configmap-uid"))
                 .data(Map.of("solution-descriptors-summary", "MyVersion 1.0.0"));
         mockConfigMaps(List.of(configMap), NAMESPACE_NAME);
 
 
-        clusterResourcesLoader.loadClusterResources(coreV1Api, appsV1Api, cloudPassport);
+        clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
 
         Environment testEnv = environmentRepository.findByNameAndCluster("env-test", CLUSTER_NAME);
         assertThat(testEnv, allOf(
@@ -107,17 +98,6 @@ class ClusterResourcesLoaderTest {
         Namespace testNamespace = namespaceRepository.findByNameAndCluster(NAMESPACE_NAME, CLUSTER_NAME);
         assertThat(testNamespace, hasProperty("name", equalTo(NAMESPACE_NAME)));
 
-//        Pod testPod = testNamespace.pods.getFirst();
-//        assertThat(testNamespace.pods, hasSize(1));
-//todo        assertThat(testPod, hasProperty("name", equalTo("pod-1")));
-
-//        Deployment testDeployment = testNamespace.deployments.getFirst();
-//        assertThat(testNamespace.deployments, hasSize(1));
-//todo        assertThat(testDeployment, hasProperty("name", equalTo("dep-1")));
-
-//        ConfigMap testConfigMap = testNamespace.configMaps.getFirst();
-//        assertThat(testNamespace.configMaps, hasSize(1));
-//todo        assertThat(testConfigMap, hasProperty("name", equalTo("configmap-1")));
     }
 
     @Test
@@ -130,7 +110,7 @@ class ClusterResourcesLoaderTest {
                                 new CloudPassportNamespace(NAMESPACE_NAME_3)))), null);
         mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME, NAMESPACE_NAME_2, NAMESPACE_NAME_3));
 
-        clusterResourcesLoader.loadClusterResources(coreV1Api, appsV1Api, cloudPassport);
+        clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
 
         Environment testEnv = environmentRepository.findByNameAndCluster("env-3-namespaces", CLUSTER_NAME);
         assertThat(testEnv, hasProperty("name", equalTo("env-3-namespaces")));
@@ -150,12 +130,102 @@ class ClusterResourcesLoaderTest {
                                 new CloudPassportNamespace(NAMESPACE_NAME_2)))), null);
         mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME, NAMESPACE_NAME_2));
 
-        clusterResourcesLoader.loadClusterResources(coreV1Api, appsV1Api, cloudPassport);
+        clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
         Environment testEnv = environmentRepository.findByNameAndCluster("env-3-namespaces", CLUSTER_NAME);
         assertThat(testEnv.getNamespaces(), hasSize(2));
-        clusterResourcesLoader.loadClusterResources(coreV1Api, appsV1Api, cloudPassport);
+        clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
         assertThat(testEnv.getNamespaces(), hasSize(2));
         assertThat(testEnv.getNamespaces(), hasItems(hasProperty("name", equalTo(NAMESPACE_NAME)), hasProperty("name", equalTo(NAMESPACE_NAME_2))));
+    }
+
+    @Test
+    @TestTransaction
+    void load_env_with_infrastructure_type() throws ApiException {
+        mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME), Map.of(LABEL_DISCOVERY_CLI_IO_LEVEL, LABEL_LEVEL_INFRA));
+
+        clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
+        Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
+        assertThat(testEnv.type, equalTo(EnvironmentType.INFRASTRUCTURE));
+    }
+
+    @Test
+    @TestTransaction
+    void load_env_with_cse_toolset_type() throws ApiException {
+        mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME),
+                Map.of(LABEL_DISCOVERY_CLI_IO_LEVEL, LABEL_LEVEL_APPS,
+                        LABEL_DISCOVERY_CLI_IO_TYPE, LABEL_TYPE_CSE_TOOLSET));
+
+        clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
+        Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
+        assertThat(testEnv.type, equalTo(EnvironmentType.CSE_TOOLSET));
+    }
+
+    @Test
+    @TestTransaction
+    void type_should_not_be_changed_if_it_was_manually_set() throws ApiException {
+        mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME),
+                Map.of(LABEL_DISCOVERY_CLI_IO_LEVEL, LABEL_LEVEL_APPS,
+                        LABEL_DISCOVERY_CLI_IO_TYPE, LABEL_TYPE_CSE_TOOLSET));
+
+        clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
+
+        Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
+        assertThat(testEnv.type, equalTo(EnvironmentType.CSE_TOOLSET));
+        testEnv.type = EnvironmentType.DESIGN_TIME;
+        environmentRepository.persist(testEnv);
+
+        clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
+
+        assertThat(testEnv.type, equalTo(EnvironmentType.DESIGN_TIME));
+    }
+
+    @Test
+    @TestTransaction
+    void load_resources_for_env_with_changed_version() throws ApiException {
+        mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME));
+
+        V1ConfigMap configMap = new V1ConfigMap()
+                .metadata(new V1ObjectMeta().name("sd-versions").uid("configmap-uid"))
+                .data(Map.of("solution-descriptors-summary", "MyVersion 1.0.0"));
+        mockConfigMaps(List.of(configMap), NAMESPACE_NAME);
+
+        clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
+        Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
+        assertThat(testEnv.deploymentVersion, equalTo("MyVersion 1.0.0\n"));
+
+        configMap = new V1ConfigMap()
+                .metadata(new V1ObjectMeta().name("sd-versions").uid("configmap-uid"))
+                .data(Map.of("solution-descriptors-summary", "MyVersion 2.0.0"));
+        mockConfigMaps(List.of(configMap), NAMESPACE_NAME);
+
+        clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
+        assertThat(testEnv.deploymentVersion, equalTo("MyVersion 2.0.0\n"));
+    }
+
+    @Test
+    @TestTransaction
+    void combine_deployment_version_for_namespaces() throws ApiException {
+        CloudPassport cloudPassport = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
+                List.of(new CloudPassportEnvironment("env-3-namespaces", "some env for tests",
+                        List.of(new CloudPassportNamespace(NAMESPACE_NAME),
+                                new CloudPassportNamespace(NAMESPACE_NAME_2)))), null);
+        mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME, NAMESPACE_NAME_2));
+
+        V1ConfigMap configMap1 = new V1ConfigMap()
+                .metadata(new V1ObjectMeta().name("sd-versions").uid("configmap-uid"))
+                .data(Map.of("solution-descriptors-summary", "MyVersion 1.0.0"));
+
+        mockConfigMaps(List.of(configMap1), NAMESPACE_NAME);
+
+        V1ConfigMap configMap2 = new V1ConfigMap()
+                .metadata(new V1ObjectMeta().name("sd-versions").uid("configmap-uid"))
+                .data(Map.of("solution-descriptors-summary", "MyVersion 2.0.0"));
+
+        mockConfigMaps(List.of(configMap2), NAMESPACE_NAME_2);
+
+        clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
+        Environment testEnv = environmentRepository.findByNameAndCluster("env-3-namespaces", CLUSTER_NAME);
+        assertThat(testEnv.deploymentVersion, equalTo("MyVersion 1.0.0\nMyVersion 2.0.0\n"));
     }
 
     @Test
@@ -167,17 +237,15 @@ class ClusterResourcesLoaderTest {
                                 new CloudPassportNamespace("non-existing-namespace")))), null);
         mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME));
 
-        clusterResourcesLoader.loadClusterResources(coreV1Api, appsV1Api, cloudPassport);
+        clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
         Environment testEnv = environmentRepository.findByNameAndCluster("env-2-namespaces", CLUSTER_NAME);
         assertThat(testEnv.getNamespaces(), hasSize(1));
         assertThat(testEnv.getNamespaces(), hasItems(hasProperty("name", equalTo(NAMESPACE_NAME))));
     }
 
-    //todo add test to check changes in pods, configmaps and deployments between two loads
-
     @Test
     @TestTransaction
-    void try_to_load_resources_from_unreachable_cluster() throws ApiException {
+    void load_resources_from_unreachable_cluster() throws ApiException {
         CloudPassport cloudPassport = new CloudPassport("unreachable-cluster", "42", "https://some.unreachable.url",
                 List.of(new CloudPassportEnvironment("env-unreachable", "some env for tests",
                         List.of(new CloudPassportNamespace(NAMESPACE_NAME)))), URI.create("http://localhost:" + port));
@@ -186,65 +254,11 @@ class ClusterResourcesLoaderTest {
         when(coreV1Api.listNamespace()).thenReturn(nsRequest);
         when(nsRequest.execute()).thenThrow(new ApiException());
 
-        clusterResourcesLoader.loadClusterResources(coreV1Api, appsV1Api, cloudPassport);
+        clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
         Environment testEnv = environmentRepository.findByNameAndCluster("env-unreachable", "unreachable-cluster");
         assertThat(testEnv, hasProperty("name", equalTo("env-unreachable")));
         assertThat(testEnv.getNamespaces(), hasSize(0));
     }
-
-    private void mockConfigMaps(List<V1ConfigMap> configMap1, String targetNamespace) throws ApiException {
-        V1ConfigMapList configMapList = new V1ConfigMapList().items(configMap1);
-        CoreV1Api.APIlistNamespacedConfigMapRequest configMapRequest = mock(CoreV1Api.APIlistNamespacedConfigMapRequest.class);
-        when(coreV1Api.listNamespacedConfigMap(targetNamespace).fieldSelector("metadata.name=" + "sd-versions")).thenReturn(configMapRequest);
-        when(configMapRequest.execute()).thenReturn(configMapList);
-    }
-
-    private void mockPodsLoading(List<V1Pod> pod1, String targetNamespace) throws ApiException {
-        V1PodList podList = new V1PodList().items(pod1);
-        CoreV1Api.APIlistNamespacedPodRequest podRequest = mock(CoreV1Api.APIlistNamespacedPodRequest.class);
-        when(coreV1Api.listNamespacedPod(targetNamespace)).thenReturn(podRequest);
-        when(podRequest.execute()).thenReturn(podList);
-    }
-
-    private void mockDeploymentsLoading(List<V1Deployment> dep1, String targetNamespace) throws ApiException {
-        V1DeploymentList depList = new V1DeploymentList().items(dep1);
-
-        AppsV1Api.APIlistNamespacedDeploymentRequest depRequest = mock(AppsV1Api.APIlistNamespacedDeploymentRequest.class);
-        when(appsV1Api.listNamespacedDeployment(targetNamespace)).thenReturn(depRequest);
-        when(depRequest.execute()).thenReturn(depList);
-    }
-
-    private void mockNamespaceLoading(String clusterName, List<String> namespaceNames) throws ApiException {
-        List<V1Namespace> v1Namespaces = namespaceNames
-                .stream()
-                .map(namespaceName -> new V1Namespace().metadata(new V1ObjectMeta()
-                        .name(namespaceName)
-                        .uid(namespaceName + clusterName)
-                        .labels(Map.of(LABEL_DISCOVERY_CLI_IO_LEVEL, LABEL_LEVEL_APPS,
-                                LABEL_DISCOVERY_CLI_IO_TYPE, LABEL_TYPE_CORE))))
-                .toList();
-        V1NamespaceList nsList = new V1NamespaceList().items(v1Namespaces);
-
-        CoreV1Api.APIlistNamespaceRequest nsRequest = mock(CoreV1Api.APIlistNamespaceRequest.class);
-        when(coreV1Api.listNamespace()).thenReturn(nsRequest);
-        when(nsRequest.execute()).thenReturn(nsList);
-    }
-
-    private void mockAllNamespaceResources() throws ApiException {
-        AppsV1Api.APIlistNamespacedDeploymentRequest depRequest = mock(AppsV1Api.APIlistNamespacedDeploymentRequest.class);
-        when(appsV1Api.listNamespacedDeployment(any())).thenReturn(depRequest);
-        when(depRequest.execute()).thenReturn(new V1DeploymentList());
-
-        CoreV1Api.APIlistNamespacedPodRequest podRequest = mock(CoreV1Api.APIlistNamespacedPodRequest.class);
-        when(coreV1Api.listNamespacedPod(any())).thenReturn(podRequest);
-        when(podRequest.execute()).thenReturn(new V1PodList());
-
-        CoreV1Api.APIlistNamespacedConfigMapRequest configMapRequest = mock(CoreV1Api.APIlistNamespacedConfigMapRequest.class);
-        when(coreV1Api.listNamespacedConfigMap(any())).thenReturn(configMapRequest);
-        when(configMapRequest.fieldSelector(any())).thenReturn(configMapRequest);
-        when(configMapRequest.execute()).thenReturn(new V1ConfigMapList());
-    }
-
 
     @Test
     void testHelloEndpoint() {
@@ -256,4 +270,41 @@ class ClusterResourcesLoaderTest {
                         .withBodyFile("test.json")));
 
     }
+
+    private void mockConfigMaps(List<V1ConfigMap> configMap1, String targetNamespace) throws ApiException {
+        V1ConfigMapList configMapList = new V1ConfigMapList().items(configMap1);
+        CoreV1Api.APIlistNamespacedConfigMapRequest configMapRequest = mock(CoreV1Api.APIlistNamespacedConfigMapRequest.class);
+        when(coreV1Api.listNamespacedConfigMap(targetNamespace)).thenReturn(configMapRequest);
+        when(configMapRequest.fieldSelector("metadata.name=" + "sd-versions")).thenReturn(configMapRequest);
+        when(configMapRequest.execute()).thenReturn(configMapList);
+    }
+
+    private void mockAllNamespaceResources() throws ApiException {
+        CoreV1Api.APIlistNamespacedConfigMapRequest configMapRequest = mock(CoreV1Api.APIlistNamespacedConfigMapRequest.class);
+        when(coreV1Api.listNamespacedConfigMap(any())).thenReturn(configMapRequest);
+        when(configMapRequest.fieldSelector(any())).thenReturn(configMapRequest);
+        when(configMapRequest.execute()).thenReturn(new V1ConfigMapList());
+    }
+
+    private void mockNamespaceLoading(String clusterName, List<String> namespaceNames) throws ApiException {
+        mockNamespaceLoading(clusterName, namespaceNames,
+                Map.of(LABEL_DISCOVERY_CLI_IO_LEVEL, LABEL_LEVEL_APPS,
+                        LABEL_DISCOVERY_CLI_IO_TYPE, LABEL_TYPE_CORE));
+    }
+
+    private void mockNamespaceLoading(String clusterName, List<String> namespaceNames, Map<String, String> labels) throws ApiException {
+        List<V1Namespace> v1Namespaces = namespaceNames
+                .stream()
+                .map(namespaceName -> new V1Namespace().metadata(new V1ObjectMeta()
+                        .name(namespaceName)
+                        .uid(namespaceName + clusterName)
+                        .labels(labels)))
+                .toList();
+        V1NamespaceList nsList = new V1NamespaceList().items(v1Namespaces);
+
+        CoreV1Api.APIlistNamespaceRequest nsRequest = mock(CoreV1Api.APIlistNamespaceRequest.class);
+        when(coreV1Api.listNamespace()).thenReturn(nsRequest);
+        when(nsRequest.execute()).thenReturn(nsList);
+    }
+
 }

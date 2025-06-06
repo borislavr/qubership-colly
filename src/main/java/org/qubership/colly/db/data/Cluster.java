@@ -1,4 +1,4 @@
-package org.qubership.colly.db;
+package org.qubership.colly.db.data;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;

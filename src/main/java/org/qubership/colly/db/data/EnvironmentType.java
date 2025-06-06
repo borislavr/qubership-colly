@@ -1,4 +1,4 @@
-package org.qubership.colly.db;
+package org.qubership.colly.db.data;
 
 public enum EnvironmentType {
     ENVIRONMENT("Environment"),

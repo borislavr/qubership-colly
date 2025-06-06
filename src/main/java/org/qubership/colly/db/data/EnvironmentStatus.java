@@ -1,4 +1,4 @@
-package org.qubership.colly.db;
+package org.qubership.colly.db.data;
 
 public enum EnvironmentStatus {
     IN_USE("In Use"),

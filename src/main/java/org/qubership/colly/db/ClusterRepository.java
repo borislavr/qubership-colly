@@ -1,8 +1,8 @@
-package org.qubership.colly.storage;
+package org.qubership.colly.db;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.qubership.colly.db.Cluster;
+import org.qubership.colly.db.data.Cluster;
 
 @ApplicationScoped
 public class ClusterRepository implements PanacheRepository<Cluster> {
