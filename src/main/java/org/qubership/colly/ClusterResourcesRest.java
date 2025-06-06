@@ -6,8 +6,8 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import org.qubership.colly.db.Cluster;
-import org.qubership.colly.db.Environment;
+import org.qubership.colly.db.data.Cluster;
+import org.qubership.colly.db.data.Environment;
 
 import java.util.HashMap;
 import java.util.List;

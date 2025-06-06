@@ -6,12 +6,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.qubership.colly.cloudpassport.CloudPassport;
-import org.qubership.colly.db.Cluster;
-import org.qubership.colly.db.Environment;
-import org.qubership.colly.db.EnvironmentStatus;
-import org.qubership.colly.db.EnvironmentType;
-import org.qubership.colly.storage.ClusterRepository;
-import org.qubership.colly.storage.EnvironmentRepository;
+import org.qubership.colly.db.data.Cluster;
+import org.qubership.colly.db.data.Environment;
+import org.qubership.colly.db.data.EnvironmentStatus;
+import org.qubership.colly.db.data.EnvironmentType;
+import org.qubership.colly.db.ClusterRepository;
+import org.qubership.colly.db.EnvironmentRepository;
 
 import java.util.Comparator;
 import java.util.Date;

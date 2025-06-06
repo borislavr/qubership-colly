@@ -1,8 +1,8 @@
-package org.qubership.colly.storage;
+package org.qubership.colly.db;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.qubership.colly.db.Environment;
+import org.qubership.colly.db.data.Environment;
 
 @ApplicationScoped
 public class EnvironmentRepository implements PanacheRepository<Environment> {
