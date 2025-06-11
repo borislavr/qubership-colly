@@ -6,7 +6,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.qubership.colly.cloudpassport.CloudPassport;
@@ -21,10 +20,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @ApplicationScoped
@@ -90,7 +87,7 @@ public class CloudPassportLoader {
     private CloudPassport processYamlFilesInClusterFolder(Path cloudPassportFolderPath, Path clusterFolderPath) {
         Log.info("Loading Cloud Passport from " + cloudPassportFolderPath);
         String clusterName = clusterFolderPath.getFileName().toString();
-        List<CloudPassportEnvironment> environments = processEnvironmentsInClusterFolder(clusterFolderPath);
+        Set<CloudPassportEnvironment> environments = processEnvironmentsInClusterFolder(clusterFolderPath);
         CloudPassportData cloudPassportData;
         try (Stream<Path> paths = Files.list(cloudPassportFolderPath)) {
             cloudPassportData = paths
@@ -129,28 +126,28 @@ public class CloudPassportLoader {
         return new CloudPassport(clusterName, token, cloudApiHost, environments, monitoringUri);
     }
 
-    private List<CloudPassportEnvironment> processEnvironmentsInClusterFolder(Path clusterFolderPath) {
+    private Set<CloudPassportEnvironment> processEnvironmentsInClusterFolder(Path clusterFolderPath) {
         try (Stream<Path> paths = Files.walk(clusterFolderPath)) {
             return paths.filter(Files::isDirectory)
                     .map(path -> path.resolve(ENV_DEFINITION_YML_FILENAME))
                     .filter(Files::isRegularFile)
                     .map(this::processEnvDefinition)
-                    .toList();
+                    .collect(Collectors.toSet());
         } catch (Exception e) {
             Log.error("Error loading Environments from " + clusterFolderPath, e);
         }
-        return Lists.newArrayList();
+        return Collections.emptySet();
     }
 
     private CloudPassportEnvironment processEnvDefinition(Path envDevinitionPath) {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         Path environmentPath = envDevinitionPath.getParent().getParent();
-        List<CloudPassportNamespace> namespaces = Collections.emptyList();
+        Set<CloudPassportNamespace> namespaces = Collections.emptySet();
         try (Stream<Path> paths = Files.walk(environmentPath)) {
             namespaces = paths.map(path -> path.resolve(NAMESPACE_YML_FILENAME))
                     .filter(Files::isRegularFile)
                     .map(this::parseNamespaceFile)
-                    .toList();
+                    .collect(Collectors.toSet());
         } catch (IOException e) {
             Log.error("Error loading environment name from " + environmentPath, e);
         }

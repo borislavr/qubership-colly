@@ -25,6 +25,7 @@ import org.qubership.colly.db.NamespaceRepository;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -43,8 +44,8 @@ class ClusterResourcesLoaderTest {
     private static final String NAMESPACE_NAME_3 = "namespace3";
     private static final String CLUSTER_NAME = "cluster";
     private static final CloudPassport CLOUD_PASSPORT = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
-            List.of(new CloudPassportEnvironment(ENV_1, "some env for tests",
-                    List.of(new CloudPassportNamespace(NAMESPACE_NAME)))), null);
+            Set.of(new CloudPassportEnvironment(ENV_1, "some env for tests",
+                    Set.of(new CloudPassportNamespace(NAMESPACE_NAME)))), null);
     @Inject
     ClusterResourcesLoader clusterResourcesLoader;
 
@@ -74,8 +75,8 @@ class ClusterResourcesLoaderTest {
     @TestTransaction
     void loadClusterResources_from_cloud_passport() throws ApiException {
         CloudPassport cloudPassport = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
-                List.of(new CloudPassportEnvironment("env-test", "some env for tests",
-                        List.of(new CloudPassportNamespace(NAMESPACE_NAME)))), URI.create("http://localhost:" + port));
+                Set.of(new CloudPassportEnvironment("env-test", "some env for tests",
+                        Set.of(new CloudPassportNamespace(NAMESPACE_NAME)))), URI.create("http://localhost:" + port));
         mockNamespaceLoading("clusterName", List.of(NAMESPACE_NAME));
 
         V1ConfigMap configMap = new V1ConfigMap()
@@ -104,8 +105,8 @@ class ClusterResourcesLoaderTest {
     @TestTransaction
     void load_resources_one_env_several_namespaces() throws ApiException {
         CloudPassport cloudPassport = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
-                List.of(new CloudPassportEnvironment("env-3-namespaces", "some env for tests",
-                        List.of(new CloudPassportNamespace(NAMESPACE_NAME),
+                Set.of(new CloudPassportEnvironment("env-3-namespaces", "some env for tests",
+                        Set.of(new CloudPassportNamespace(NAMESPACE_NAME),
                                 new CloudPassportNamespace(NAMESPACE_NAME_2),
                                 new CloudPassportNamespace(NAMESPACE_NAME_3)))), null);
         mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME, NAMESPACE_NAME_2, NAMESPACE_NAME_3));
@@ -125,8 +126,8 @@ class ClusterResourcesLoaderTest {
     @TestTransaction
     void load_resources_twice() throws ApiException {
         CloudPassport cloudPassport = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
-                List.of(new CloudPassportEnvironment("env-3-namespaces", "some env for tests",
-                        List.of(new CloudPassportNamespace(NAMESPACE_NAME),
+                Set.of(new CloudPassportEnvironment("env-3-namespaces", "some env for tests",
+                        Set.of(new CloudPassportNamespace(NAMESPACE_NAME),
                                 new CloudPassportNamespace(NAMESPACE_NAME_2)))), null);
         mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME, NAMESPACE_NAME_2));
 
@@ -206,8 +207,8 @@ class ClusterResourcesLoaderTest {
     @TestTransaction
     void combine_deployment_version_for_namespaces() throws ApiException {
         CloudPassport cloudPassport = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
-                List.of(new CloudPassportEnvironment("env-3-namespaces", "some env for tests",
-                        List.of(new CloudPassportNamespace(NAMESPACE_NAME),
+                Set.of(new CloudPassportEnvironment("env-3-namespaces", "some env for tests",
+                        Set.of(new CloudPassportNamespace(NAMESPACE_NAME),
                                 new CloudPassportNamespace(NAMESPACE_NAME_2)))), null);
         mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME, NAMESPACE_NAME_2));
 
@@ -232,8 +233,8 @@ class ClusterResourcesLoaderTest {
     @TestTransaction
     void try_to_load_namespace_from_cloud_passport_that_does_not_exist_in_k8s() throws ApiException {
         CloudPassport cloudPassport = new CloudPassport(CLUSTER_NAME, "42", "https://api.example.com",
-                List.of(new CloudPassportEnvironment("env-2-namespaces", "some env for tests",
-                        List.of(new CloudPassportNamespace(NAMESPACE_NAME),
+                Set.of(new CloudPassportEnvironment("env-2-namespaces", "some env for tests",
+                        Set.of(new CloudPassportNamespace(NAMESPACE_NAME),
                                 new CloudPassportNamespace("non-existing-namespace")))), null);
         mockNamespaceLoading(CLUSTER_NAME, List.of(NAMESPACE_NAME));
 
@@ -247,8 +248,8 @@ class ClusterResourcesLoaderTest {
     @TestTransaction
     void load_resources_from_unreachable_cluster() throws ApiException {
         CloudPassport cloudPassport = new CloudPassport("unreachable-cluster", "42", "https://some.unreachable.url",
-                List.of(new CloudPassportEnvironment("env-unreachable", "some env for tests",
-                        List.of(new CloudPassportNamespace(NAMESPACE_NAME)))), URI.create("http://localhost:" + port));
+                Set.of(new CloudPassportEnvironment("env-unreachable", "some env for tests",
+                        Set.of(new CloudPassportNamespace(NAMESPACE_NAME)))), URI.create("http://localhost:" + port));
 
         CoreV1Api.APIlistNamespaceRequest nsRequest = mock(CoreV1Api.APIlistNamespaceRequest.class);
         when(coreV1Api.listNamespace()).thenReturn(nsRequest);

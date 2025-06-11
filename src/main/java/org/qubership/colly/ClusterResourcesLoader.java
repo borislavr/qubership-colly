@@ -87,7 +87,7 @@ public class ClusterResourcesLoader {
         Log.info("Cluster " + cloudPassport.name() + " loaded successfully.");
     }
 
-    private List<Environment> loadEnvironments(CoreV1Api coreV1Api, Cluster cluster, List<CloudPassportEnvironment> environments, URI monitoringUri) {
+    private List<Environment> loadEnvironments(CoreV1Api coreV1Api, Cluster cluster, Collection<CloudPassportEnvironment> environments, URI monitoringUri) {
 
         CoreV1Api.APIlistNamespaceRequest apilistNamespaceRequest = coreV1Api.listNamespace();
         Map<String, V1Namespace> k8sNamespaces;
