@@ -56,6 +56,14 @@ public class ClusterResourcesRest {
         collyStorage.saveEnvironment(id, name, owner, description, status, labels, type, team);
     }
 
+    @POST
+    @Path("/clusters/{clusterName}")
+    @RolesAllowed("admin")
+    public void saveCluster(@PathParam("clusterName") String clusterName,
+                            @FormParam("description") String description) {
+        collyStorage.saveCluster(clusterName, description);
+    }
+
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/auth-status")
@@ -70,7 +78,6 @@ public class ClusterResourcesRest {
             Map<String, Object> userInfo = new HashMap<>();
             userInfo.put("authenticated", true);
             userInfo.put("username", securityIdentity.getPrincipal().getName());
-            userInfo.put("roles", securityIdentity.getRoles());
             userInfo.put("isAdmin", securityIdentity.hasRole("admin"));
 
             return Response.ok(userInfo).build();

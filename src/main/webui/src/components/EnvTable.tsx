@@ -2,41 +2,23 @@ import React, {useEffect, useState} from "react";
 import {Box, Chip, IconButton} from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import {DataGrid, GridColDef} from '@mui/x-data-grid';
-import EditEnvironmentDialog from "./components/EditEnvironmentDialog";
-import {Environment, ENVIRONMENT_TYPES_MAPPING, STATUS_MAPPING} from "./entities/environments";
-import LogoutButton from "./components/LogoutButton";
+import EditEnvironmentDialog from "./EditEnvironmentDialog";
+import {Environment, ENVIRONMENT_TYPES_MAPPING, STATUS_MAPPING} from "../entities/environments";
+import {UserInfo} from "../entities/users";
 
-interface UserInfo {
-    authenticated: boolean;
-    username?: string;
-    roles?: string[];
-    isAdmin?: boolean;
-    email?: string;
-    name?: string;
+interface EnvTableProps {
+    userInfo: UserInfo;
 }
 
-export default function EnvironmentsOverview() {
+export default function EnvTable({userInfo}: EnvTableProps) {
     const [selectedEnv, setSelectedEnv] = useState<Environment | null>(null);
     const [environments, setEnvironments] = useState<Environment[]>([]);
-    const [userInfo, setUserInfo] = useState<UserInfo>({authenticated: false});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([
-            fetch("/colly/auth-status").then(res => res.json()),
-            fetch("/colly/environments").then(res => res.json())
-        ])
-            .then(([authData, envData]) => {
-                setUserInfo(authData);
-                setEnvironments(envData);
-            })
-            .catch(err => {
-                console.error("Failed to fetch data:", err);
-                fetch("/colly/environments")
-                    .then(res => res.json())
-                    .then(data => setEnvironments(data))
-                    .catch(envErr => console.error("Failed to fetch environments:", envErr));
-            })
+        fetch("/colly/environments").then(res => res.json())
+            .then(envData => setEnvironments(envData))
+            .catch(err => console.error("Failed to fetch environments:", err))
             .finally(() => setLoading(false));
     }, []);
 
@@ -104,8 +86,8 @@ export default function EnvironmentsOverview() {
     }));
 
     const baseColumns: GridColDef[] = [
-        {field: "name", headerName: "Environment", flex: 1},
-        {field: "type", headerName: "Environment Type", flex: 1},
+        {field: "name", headerName: "Name", flex: 1},
+        {field: "type", headerName: "Type", flex: 1},
         {field: "namespaces", headerName: "Namespace(s)", flex: 1},
         {field: "cluster", headerName: "Cluster", flex: 1},
         {field: "owner", headerName: "Owner", flex: 1},
@@ -115,7 +97,7 @@ export default function EnvironmentsOverview() {
             field: "labels", headerName: "Labels", flex: 1,
             renderCell: (params: { row: { labels: string[]; }; }) =>
                 <>
-                    {params.row.labels.map(label => <Chip label={label}/>)}
+                    {params.row.labels.map(label => <Chip label={label} key={label}/>)}
                 </>
         },
         {field: "description", headerName: "Description", flex: 2},
@@ -145,12 +127,7 @@ export default function EnvironmentsOverview() {
     }
 
     return (
-        <Box sx={{p: 4}}>
-            {userInfo.authenticated && (
-                <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
-                    <LogoutButton displayedName={userInfo.username}/>
-                </Box>
-            )}
+        <Box>
             <Box>
                 <DataGrid
                     rows={rows}

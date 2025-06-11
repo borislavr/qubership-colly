@@ -42,7 +42,7 @@ class CloudPassportLoaderTest {
             List.of(new CloudPassportEnvironment(
                     "env-1",
                     "some env for tests",
-                    List.of(new CloudPassportNamespace("namespace-1"), new CloudPassportNamespace("namespace-2")))),
+                    List.of(new CloudPassportNamespace("namespace-2"), new CloudPassportNamespace("namespace-1")))),
             URI.create("http://vmsingle-k8s.victoria:8429")
     );
     @Inject
@@ -61,7 +61,8 @@ class CloudPassportLoaderTest {
     @TestConfigProperty(key = "cloud.passport.folder", value = "src/test/resources/gitrepo_with_cloudpassports")
     void load_cloud_passports_from_test_folder() {
         List<CloudPassport> result = loader.loadCloudPassports();
-        assertThat(result, hasItems(TEST_CLUSTER_CLOUD_PASSPORT, TEST_CLUSTER_CLOUD_PASSPORT_FOR_UNREACHABLE_CLUSTER));
+        assertThat(result, hasItem(TEST_CLUSTER_CLOUD_PASSPORT));
+        assertThat(result, hasItem(TEST_CLUSTER_CLOUD_PASSPORT_FOR_UNREACHABLE_CLUSTER));
     }
 
     @Test
