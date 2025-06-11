@@ -1,10 +1,8 @@
-name: Build Project
+name: Sonar Check
 
 on:
   pull_request:
     types: [ opened, synchronize, reopened ]
-permissions:
-  packages: write
 
 jobs:
   mvn-build:
@@ -16,7 +14,6 @@ jobs:
         -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
         -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
         -Dsonar.host.url=${{ vars.SONAR_HOST_URL }}
-      upload-artifact: true
       server-id: github
       java-version: 21
       artifact-id: ${{ github.event.repository.name }}
