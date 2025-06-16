@@ -35,7 +35,7 @@ class CloudPassportLoaderTest {
             Set.of(new CloudPassportEnvironment(
                     "env-test",
                     "some env for tests",
-                    Set.of(new CloudPassportNamespace("demo-k8s")))),
+                    List.of(new CloudPassportNamespace("demo-k8s")))),
             URI.create("http://localhost:8428"));
     private static final CloudPassport TEST_CLUSTER_CLOUD_PASSPORT_FOR_UNREACHABLE_CLUSTER = new CloudPassport("unreachable-cluster",
             "1234567890",
@@ -43,7 +43,7 @@ class CloudPassportLoaderTest {
             Set.of(new CloudPassportEnvironment(
                     "env-1",
                     "some env for tests",
-                    Set.of(new CloudPassportNamespace("namespace-2"), new CloudPassportNamespace("namespace-1")))),
+                    List.of(new CloudPassportNamespace("namespace-2"), new CloudPassportNamespace("namespace-1")))),
             URI.create("http://vmsingle-k8s.victoria:8429")
     );
     @Inject
@@ -62,8 +62,8 @@ class CloudPassportLoaderTest {
     @TestConfigProperty(key = "cloud.passport.folder", value = "src/test/resources/gitrepo_with_cloudpassports")
     void load_cloud_passports_from_test_folder() {
         List<CloudPassport> result = loader.loadCloudPassports();
-        assertThat(result, hasItem(TEST_CLUSTER_CLOUD_PASSPORT));
-        assertThat(result, hasItem(TEST_CLUSTER_CLOUD_PASSPORT_FOR_UNREACHABLE_CLUSTER));
+        assertThat(result, containsInAnyOrder(TEST_CLUSTER_CLOUD_PASSPORT, TEST_CLUSTER_CLOUD_PASSPORT_FOR_UNREACHABLE_CLUSTER));
+
     }
 
     @Test
