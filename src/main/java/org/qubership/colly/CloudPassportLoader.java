@@ -142,12 +142,13 @@ public class CloudPassportLoader {
     private CloudPassportEnvironment processEnvDefinition(Path envDevinitionPath) {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         Path environmentPath = envDevinitionPath.getParent().getParent();
-        Set<CloudPassportNamespace> namespaces = Collections.emptySet();
+        List<CloudPassportNamespace> namespaces = Collections.emptyList();
         try (Stream<Path> paths = Files.walk(environmentPath)) {
             namespaces = paths.map(path -> path.resolve(NAMESPACE_YML_FILENAME))
                     .filter(Files::isRegularFile)
+                    .sorted()
                     .map(this::parseNamespaceFile)
-                    .collect(Collectors.toSet());
+                    .toList();
         } catch (IOException e) {
             Log.error("Error loading environment name from " + environmentPath, e);
         }
