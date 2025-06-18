@@ -94,7 +94,7 @@ class ClusterResourcesLoaderTest {
                 hasProperty("deploymentVersion", equalTo("MyVersion 1.0.0\n")),
                 hasProperty("type", equalTo(EnvironmentType.ENVIRONMENT))));
 
-        assertThat(testEnv.cluster, hasProperty("name", equalTo(CLUSTER_NAME)));
+        assertThat(testEnv.getCluster(), hasProperty("name", equalTo(CLUSTER_NAME)));
 
         Namespace testNamespace = namespaceRepository.findByNameAndCluster(NAMESPACE_NAME, CLUSTER_NAME);
         assertThat(testNamespace, hasProperty("name", equalTo(NAMESPACE_NAME)));
@@ -146,7 +146,7 @@ class ClusterResourcesLoaderTest {
 
         clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
         Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
-        assertThat(testEnv.type, equalTo(EnvironmentType.INFRASTRUCTURE));
+        assertThat(testEnv.getType(), equalTo(EnvironmentType.INFRASTRUCTURE));
     }
 
     @Test
@@ -158,7 +158,7 @@ class ClusterResourcesLoaderTest {
 
         clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
         Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
-        assertThat(testEnv.type, equalTo(EnvironmentType.CSE_TOOLSET));
+        assertThat(testEnv.getType(), equalTo(EnvironmentType.CSE_TOOLSET));
     }
 
     @Test
@@ -171,13 +171,13 @@ class ClusterResourcesLoaderTest {
         clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
 
         Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
-        assertThat(testEnv.type, equalTo(EnvironmentType.CSE_TOOLSET));
-        testEnv.type = EnvironmentType.DESIGN_TIME;
+        assertThat(testEnv.getType(), equalTo(EnvironmentType.CSE_TOOLSET));
+        testEnv.setType(EnvironmentType.DESIGN_TIME);
         environmentRepository.persist(testEnv);
 
         clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
 
-        assertThat(testEnv.type, equalTo(EnvironmentType.DESIGN_TIME));
+        assertThat(testEnv.getType(), equalTo(EnvironmentType.DESIGN_TIME));
     }
 
     @Test
@@ -192,7 +192,7 @@ class ClusterResourcesLoaderTest {
 
         clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
         Environment testEnv = environmentRepository.findByNameAndCluster(ENV_1, CLUSTER_NAME);
-        assertThat(testEnv.deploymentVersion, equalTo("MyVersion 1.0.0\n"));
+        assertThat(testEnv.getDeploymentVersion(), equalTo("MyVersion 1.0.0\n"));
 
         configMap = new V1ConfigMap()
                 .metadata(new V1ObjectMeta().name("sd-versions").uid("configmap-uid"))
@@ -200,7 +200,7 @@ class ClusterResourcesLoaderTest {
         mockConfigMaps(List.of(configMap), NAMESPACE_NAME);
 
         clusterResourcesLoader.loadClusterResources(coreV1Api, CLOUD_PASSPORT);
-        assertThat(testEnv.deploymentVersion, equalTo("MyVersion 2.0.0\n"));
+        assertThat(testEnv.getDeploymentVersion(), equalTo("MyVersion 2.0.0\n"));
     }
 
     @Test
@@ -226,7 +226,7 @@ class ClusterResourcesLoaderTest {
 
         clusterResourcesLoader.loadClusterResources(coreV1Api, cloudPassport);
         Environment testEnv = environmentRepository.findByNameAndCluster("env-3-namespaces", CLUSTER_NAME);
-        assertThat(testEnv.deploymentVersion, equalTo("MyVersion 1.0.0\nMyVersion 2.0.0\n"));
+        assertThat(testEnv.getDeploymentVersion(), equalTo("MyVersion 1.0.0\nMyVersion 2.0.0\n"));
     }
 
     @Test

@@ -11,31 +11,31 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class Environment extends PanacheEntity {
 
-    public String name;
-    public String owner;
-    public String team;
-    public String description;
-    public LocalDate expirationDate;
+    private String name;
+    private String owner;
+    private String team;
+    private String description;
+    private LocalDate expirationDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    public EnvironmentStatus status = EnvironmentStatus.FREE;
+    private EnvironmentStatus status = EnvironmentStatus.FREE;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    public EnvironmentType type = EnvironmentType.ENVIRONMENT;
+    private EnvironmentType type = EnvironmentType.ENVIRONMENT;
 
     @ManyToOne
     @JoinColumn(referencedColumnName = "name")
-    public Cluster cluster;
+    private Cluster cluster;
 
     @ElementCollection
     @CollectionTable(name = "monitoring_data_content", joinColumns = @JoinColumn(name = "id"))
     @MapKeyColumn(name = "key")
     @Column(name = "value", columnDefinition = "TEXT")
-    public Map<String, String> monitoringData;
+    private Map<String, String> monitoringData;
 
-    public String deploymentVersion;
+    private String deploymentVersion;
 
     @ElementCollection
     @CollectionTable(name = "environments_labels", joinColumns = @JoinColumn(name = "environment_id"))
@@ -47,7 +47,7 @@ public class Environment extends PanacheEntity {
 
 
     public Environment(String name) {
-        this.name = name;
+        this.setName(name);
         this.namespaces = new java.util.ArrayList<>();
     }
 
@@ -74,19 +74,84 @@ public class Environment extends PanacheEntity {
         this.labels = new ArrayList<>(labels);
     }
 
-
-
-    public void addLabel(String label) {
-        if (this.labels == null) {
-            this.labels = new java.util.ArrayList<>();
-        }
-        this.labels.add(label);
+    public String getDeploymentVersion() {
+        return deploymentVersion;
     }
 
-    public void removeLabel(String label) {
-        if (this.labels != null) {
-            this.labels.remove(label);
-        }
+    public void setDeploymentVersion(String deploymentVersion) {
+        this.deploymentVersion = deploymentVersion;
+    }
+
+    public LocalDate getExpirationDate() {
+        return expirationDate;
+    }
+
+    public void setExpirationDate(LocalDate expirationDate) {
+        this.expirationDate = expirationDate;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public String getTeam() {
+        return team;
+    }
+
+    public void setTeam(String team) {
+        this.team = team;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public EnvironmentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(EnvironmentStatus status) {
+        this.status = status;
+    }
+
+    public EnvironmentType getType() {
+        return type;
+    }
+
+    public void setType(EnvironmentType type) {
+        this.type = type;
+    }
+
+    public Cluster getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(Cluster cluster) {
+        this.cluster = cluster;
+    }
+
+    public Map<String, String> getMonitoringData() {
+        return monitoringData;
+    }
+
+    public void setMonitoringData(Map<String, String> monitoringData) {
+        this.monitoringData = monitoringData;
     }
 }
 

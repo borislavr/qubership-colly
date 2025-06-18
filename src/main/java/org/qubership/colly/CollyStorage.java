@@ -49,7 +49,7 @@ public class CollyStorage {
     }
 
     public List<Environment> getEnvironments() {
-        return environmentRepository.findAll().stream().sorted(Comparator.comparing(o -> o.name)).toList();
+        return environmentRepository.findAll().stream().sorted(Comparator.comparing(Environment::getName)).toList();
     }
 
     public List<Cluster> getClusters() {
@@ -64,12 +64,12 @@ public class CollyStorage {
             throw new RuntimeException("Environment with id " + id + " not found");
         }
         Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description + " status " + status + " labels " + labels + " date " + expirationDate);
-        environment.owner = owner;
-        environment.description = description;
-        environment.status = EnvironmentStatus.fromString(status);
-        environment.type = EnvironmentType.fromString(type);
-        environment.team = team;
-        environment.expirationDate = expirationDate;
+        environment.setOwner(owner);
+        environment.setDescription(description);
+        environment.setStatus(EnvironmentStatus.fromString(status));
+        environment.setType(EnvironmentType.fromString(type));
+        environment.setTeam(team);
+        environment.setExpirationDate(expirationDate);
         environment.setLabels(labels);
         environmentRepository.persist(environment);
     }
