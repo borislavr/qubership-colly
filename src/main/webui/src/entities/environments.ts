@@ -11,6 +11,7 @@ export type Environment = {
     description: string;
     deploymentVersion: string;
     monitoringData: Record<string, number>;
+    expirationDate?: Date;
 };
 export type EnvironmentStatus = "IN_USE" | "RESERVED" | "FREE" | "MIGRATING";
 
@@ -23,7 +24,13 @@ export const STATUS_MAPPING = {
     RESERVED: "Reserved"
 };
 
-export type EnvironmentType= "ENVIRONMENT" | "CSE_TOOLSET" | "DESIGN_TIME" | "APP_DEPLOYER" | "INFRASTRUCTURE" | "UNDEFINED"
+export type EnvironmentType =
+    "ENVIRONMENT"
+    | "CSE_TOOLSET"
+    | "DESIGN_TIME"
+    | "APP_DEPLOYER"
+    | "INFRASTRUCTURE"
+    | "UNDEFINED"
 
 export const ALL_TYPES: EnvironmentType[] = ["ENVIRONMENT", "CSE_TOOLSET", "DESIGN_TIME", "APP_DEPLOYER", "INFRASTRUCTURE", "UNDEFINED"];
 export const ENVIRONMENT_TYPES_MAPPING = {

@@ -6,13 +6,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.qubership.colly.cloudpassport.CloudPassport;
+import org.qubership.colly.db.ClusterRepository;
+import org.qubership.colly.db.EnvironmentRepository;
 import org.qubership.colly.db.data.Cluster;
 import org.qubership.colly.db.data.Environment;
 import org.qubership.colly.db.data.EnvironmentStatus;
 import org.qubership.colly.db.data.EnvironmentType;
-import org.qubership.colly.db.ClusterRepository;
-import org.qubership.colly.db.EnvironmentRepository;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -57,17 +58,18 @@ public class CollyStorage {
 
 
     @Transactional
-    public void saveEnvironment(String id, String name, String owner, String description, String status, List<String> labels, String type, String team) {
+    public void saveEnvironment(String id, String name, String owner, String description, String status, List<String> labels, String type, String team, LocalDate expirationDate) {
         Environment environment = environmentRepository.findById(Long.valueOf(id));
         if (environment == null) {
             throw new RuntimeException("Environment with id " + id + " not found");
         }
-        Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description + " status " + status + " labels " + labels);
+        Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description + " status " + status + " labels " + labels + " date " + expirationDate);
         environment.owner = owner;
         environment.description = description;
         environment.status = EnvironmentStatus.fromString(status);
         environment.type = EnvironmentType.fromString(type);
         environment.team = team;
+        environment.expirationDate = expirationDate;
         environment.setLabels(labels);
         environmentRepository.persist(environment);
     }

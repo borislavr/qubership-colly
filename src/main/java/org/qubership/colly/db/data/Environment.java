@@ -4,10 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.*;
 
 @Entity(name = "environments")
 @JsonInclude(JsonInclude.Include.ALWAYS)
@@ -17,6 +15,7 @@ public class Environment extends PanacheEntity {
     public String owner;
     public String team;
     public String description;
+    public LocalDate expirationDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

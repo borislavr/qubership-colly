@@ -5,6 +5,7 @@ import {DataGrid, GridColDef} from '@mui/x-data-grid';
 import EditEnvironmentDialog from "./EditEnvironmentDialog";
 import {Environment, ENVIRONMENT_TYPES_MAPPING, STATUS_MAPPING} from "../entities/environments";
 import {UserInfo} from "../entities/users";
+import dayjs from "dayjs";
 
 interface EnvTableProps {
     userInfo: UserInfo;
@@ -40,6 +41,7 @@ export default function EnvTable({userInfo}: EnvTableProps) {
             formData.append("status", changedEnv.status);
             formData.append("type", changedEnv.type);
             formData.append("name", changedEnv.name);
+            formData.append("expirationDate", changedEnv.expirationDate ? dayjs(changedEnv.expirationDate).format("YYYY-MM-DD") : "");
             changedEnv.labels.forEach(label => formData.append("labels", label));
 
             const response = await fetch(`/colly/environments/${changedEnv.id}`, {
@@ -66,6 +68,7 @@ export default function EnvTable({userInfo}: EnvTableProps) {
         owner: env.owner,
         team: env.team,
         status: STATUS_MAPPING[env.status] || env.status,
+        expirationDate: env.expirationDate,
         type: ENVIRONMENT_TYPES_MAPPING[env.type] || env.type,
         labels: env.labels,
         description: env.description,
@@ -92,6 +95,14 @@ export default function EnvTable({userInfo}: EnvTableProps) {
         {field: "cluster", headerName: "Cluster", flex: 1},
         {field: "owner", headerName: "Owner", flex: 1},
         {field: "team", headerName: "Team", flex: 1},
+        {field: "expirationDate", headerName: "Expiration Date",
+            valueFormatter: (value?: string) => {
+                if (value == null) {
+                    return '';
+                }
+                return new Date(value).toLocaleDateString();
+            },
+            flex: 1},
         {field: "status", headerName: "Status", flex: 1},
         {
             field: "labels", headerName: "Labels", flex: 1,
