@@ -70,6 +70,7 @@ export default function EditEnvironmentDialog({environment, allLabels, onClose, 
                     disablePast
                     label="Expiration Date"
                     slotProps={{field: {clearable: true}}}
+                    format={"DD/MM/YYYY"}
                     value={localEnv.expirationDate ? dayjs(localEnv.expirationDate) : null}
                     onChange={(newValue) => setLocalEnv(prevState => ({
                         ...prevState,
