@@ -66,7 +66,7 @@ export default function EditEnvironmentDialog({environment, allLabels, onClose, 
             />
             <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                    sx={{mt: 1, mb: 1}}
+                    sx={{mt: 1, mb: 1, width: '100%'}}
                     disablePast
                     label="Expiration Date"
                     slotProps={{field: {clearable: true}}}
