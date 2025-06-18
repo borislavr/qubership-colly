@@ -53,6 +53,7 @@ class ClusterResourcesRestTest {
                 .formParam("labels", "label1,label2")
                 .formParam("type", "development")
                 .formParam("team", "test-team")
+                .formParam("expirationDate", "2024-12-31")
                 .when().post("/colly/environments/1")
                 .then()
                 .statusCode(204);

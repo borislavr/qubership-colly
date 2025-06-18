@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import org.qubership.colly.db.data.Cluster;
 import org.qubership.colly.db.data.Environment;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,8 +53,13 @@ public class ClusterResourcesRest {
                                 @FormParam("status") String status,
                                 @FormParam("labels") List<String> labels,
                                 @FormParam("type") String type,
-                                @FormParam("team") String team) {
-        collyStorage.saveEnvironment(id, name, owner, description, status, labels, type, team);
+                                @FormParam("team") String team,
+                                @FormParam("expirationDate") String expirationDate) {
+        LocalDate date = null;
+        if (expirationDate != null && !expirationDate.isEmpty()) {
+            date = LocalDate.parse(expirationDate);
+        }
+        collyStorage.saveEnvironment(id, name, owner, description, status, labels, type, team, date);
     }
 
     @POST

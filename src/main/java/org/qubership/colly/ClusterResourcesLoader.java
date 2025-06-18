@@ -108,14 +108,14 @@ public class ClusterResourcesLoader {
             EnvironmentType environmentType;
             if (environment == null) {
                 environment = new Environment(cloudPassportEnvironment.name());
-                environment.description = cloudPassportEnvironment.description();
-                environment.cluster = cluster;
+                environment.setDescription(cloudPassportEnvironment.description());
+                environment.setCluster(cluster);
                 environmentType = EnvironmentType.UNDEFINED;
                 environmentRepository.persist(environment);
-                Log.info("env created in db: " + environment.name);
+                Log.info("env created in db: " + environment.getName());
             } else {
-                environmentType = environment.type;
-                Log.info("environment " + environment.name + " exists");
+                environmentType = environment.getType();
+                Log.info("environment " + environment.getName() + " exists");
             }
             StringBuilder deploymentVersions = new StringBuilder();
 
@@ -139,9 +139,9 @@ public class ClusterResourcesLoader {
                 deploymentVersions.append(loadInformationAboutDeploymentVersion(coreV1Api, cloudPassportNamespace.name()));
                 namespaceRepository.persist(namespace);
             }
-            environment.monitoringData = monitoringService.loadMonitoringData(monitoringUri, environment.getNamespaces().stream().map(namespace -> namespace.name).toList());
-            environment.type = environmentType;
-            environment.deploymentVersion = deploymentVersions.toString();
+            environment.setMonitoringData(monitoringService.loadMonitoringData(monitoringUri, environment.getNamespaces().stream().map(namespace -> namespace.name).toList()));
+            environment.setType(environmentType);
+            environment.setDeploymentVersion(deploymentVersions.toString());
             environmentRepository.persist(environment);
 
             envs.add(environment);
@@ -156,7 +156,7 @@ public class ClusterResourcesLoader {
         try {
             configMapList = request.execute();
         } catch (ApiException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
         if (configMapList.getItems().isEmpty()) {
             Log.warn("No config map with name=" + versionsConfigMapName + " found in namespace " + namespaceName);

@@ -16,11 +16,16 @@ import React from "react";
 import {
     ALL_STATUSES,
     ALL_TYPES,
-    Environment, ENVIRONMENT_TYPES_MAPPING,
+    Environment,
+    ENVIRONMENT_TYPES_MAPPING,
     EnvironmentStatus,
     EnvironmentType,
     STATUS_MAPPING
 } from "../entities/environments";
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
+import {DatePicker} from "@mui/x-date-pickers";
+import dayjs from "dayjs";
 
 type Props = {
     environment: Environment;
@@ -59,6 +64,19 @@ export default function EditEnvironmentDialog({environment, allLabels, onClose, 
                 fullWidth
                 margin="dense"
             />
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                    sx={{mt: 1, mb: 1, width: '100%'}}
+                    disablePast
+                    label="Expiration Date"
+                    slotProps={{field: {clearable: true}}}
+                    format={"DD/MM/YYYY"}
+                    value={localEnv.expirationDate ? dayjs(localEnv.expirationDate) : null}
+                    onChange={(newValue) => setLocalEnv(prevState => ({
+                        ...prevState,
+                        expirationDate: newValue ? newValue.toDate() : undefined
+                    }))}/>
+            </LocalizationProvider>
             <FormControl sx={{mt: 1, mb: 1}} fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select
@@ -82,7 +100,7 @@ export default function EditEnvironmentDialog({environment, allLabels, onClose, 
                     margin="dense"
                 >
                     {ALL_TYPES.map(type => <MenuItem key={type}
-                                                          value={type}>{ENVIRONMENT_TYPES_MAPPING[type]}</MenuItem>)}
+                                                     value={type}>{ENVIRONMENT_TYPES_MAPPING[type]}</MenuItem>)}
                 </Select>
             </FormControl>
             <TextField

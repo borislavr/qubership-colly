@@ -158,7 +158,7 @@ public class CloudPassportLoader {
             Log.info("Processing environment " + inventory.getEnvironmentName());
             return new CloudPassportEnvironment(inventory.getEnvironmentName(), inventory.getDescription(), namespaces);
         } catch (IOException e) {
-            throw new RuntimeException("Error during read file: " + envDevinitionPath, e);
+            throw new IllegalStateException("Error during read file: " + envDevinitionPath, e);
         }
     }
 
@@ -169,7 +169,7 @@ public class CloudPassportLoader {
             Log.info("Processing namespace " + namespace.getName());
             return new CloudPassportNamespace(namespace.getName());
         } catch (IOException e) {
-            throw new RuntimeException("Error during read file: " + namespaceFilePath, e);
+            throw new IllegalStateException("Error during read file: " + namespaceFilePath, e);
         }
     }
 
@@ -183,9 +183,9 @@ public class CloudPassportLoader {
             }
 
         } catch (IOException e) {
-            throw new RuntimeException("Error during read file: " + path, e);
+            throw new IllegalStateException("Error during read file: " + path, e);
         }
-        throw new RuntimeException("Can't read cloud passport data creds from " + path);
+        throw new IllegalArgumentException("Can't read cloud passport data creds from " + path);
     }
 
     CloudPassportData parseCloudPassportDataFile(Path filePath) {
@@ -197,8 +197,8 @@ public class CloudPassportLoader {
                 return data;
             }
         } catch (IOException e) {
-            throw new RuntimeException("Error during read file: " + filePath, e);
+            throw new IllegalStateException("Error during read file: " + filePath, e);
         }
-        throw new RuntimeException("Can't read cloud passport data from " + filePath);
+        throw new IllegalArgumentException("Can't read cloud passport data from " + filePath);
     }
 }

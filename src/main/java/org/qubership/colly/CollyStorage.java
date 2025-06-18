@@ -6,13 +6,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.qubership.colly.cloudpassport.CloudPassport;
+import org.qubership.colly.db.ClusterRepository;
+import org.qubership.colly.db.EnvironmentRepository;
 import org.qubership.colly.db.data.Cluster;
 import org.qubership.colly.db.data.Environment;
 import org.qubership.colly.db.data.EnvironmentStatus;
 import org.qubership.colly.db.data.EnvironmentType;
-import org.qubership.colly.db.ClusterRepository;
-import org.qubership.colly.db.EnvironmentRepository;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -48,7 +49,7 @@ public class CollyStorage {
     }
 
     public List<Environment> getEnvironments() {
-        return environmentRepository.findAll().stream().sorted(Comparator.comparing(o -> o.name)).toList();
+        return environmentRepository.findAll().stream().sorted(Comparator.comparing(Environment::getName)).toList();
     }
 
     public List<Cluster> getClusters() {
@@ -57,17 +58,18 @@ public class CollyStorage {
 
 
     @Transactional
-    public void saveEnvironment(String id, String name, String owner, String description, String status, List<String> labels, String type, String team) {
+    public void saveEnvironment(String id, String name, String owner, String description, String status, List<String> labels, String type, String team, LocalDate expirationDate) {
         Environment environment = environmentRepository.findById(Long.valueOf(id));
         if (environment == null) {
-            throw new RuntimeException("Environment with id " + id + " not found");
+            throw new IllegalArgumentException("Environment with id " + id + " not found");
         }
-        Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description + " status " + status + " labels " + labels);
-        environment.owner = owner;
-        environment.description = description;
-        environment.status = EnvironmentStatus.fromString(status);
-        environment.type = EnvironmentType.fromString(type);
-        environment.team = team;
+        Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description + " status " + status + " labels " + labels + " date " + expirationDate);
+        environment.setOwner(owner);
+        environment.setDescription(description);
+        environment.setStatus(EnvironmentStatus.fromString(status));
+        environment.setType(EnvironmentType.fromString(type));
+        environment.setTeam(team);
+        environment.setExpirationDate(expirationDate);
         environment.setLabels(labels);
         environmentRepository.persist(environment);
     }
@@ -76,7 +78,7 @@ public class CollyStorage {
     public void saveCluster(String clusterName, String description) {
         Cluster cluster = clusterRepository.findByName(clusterName);
         if (cluster == null) {
-            throw new RuntimeException("Cluster with name " + clusterName + " not found");
+            throw new IllegalArgumentException("Cluster with name " + clusterName + " not found");
         }
         Log.info("Saving cluster with name " + clusterName + " description " + description);
         cluster.description = description;
