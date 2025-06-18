@@ -156,7 +156,7 @@ public class ClusterResourcesLoader {
         try {
             configMapList = request.execute();
         } catch (ApiException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
         if (configMapList.getItems().isEmpty()) {
             Log.warn("No config map with name=" + versionsConfigMapName + " found in namespace " + namespaceName);

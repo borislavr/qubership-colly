@@ -61,7 +61,7 @@ public class CollyStorage {
     public void saveEnvironment(String id, String name, String owner, String description, String status, List<String> labels, String type, String team, LocalDate expirationDate) {
         Environment environment = environmentRepository.findById(Long.valueOf(id));
         if (environment == null) {
-            throw new RuntimeException("Environment with id " + id + " not found");
+            throw new IllegalArgumentException("Environment with id " + id + " not found");
         }
         Log.info("Saving environment with id " + id + " name " + name + " owner " + owner + " description " + description + " status " + status + " labels " + labels + " date " + expirationDate);
         environment.setOwner(owner);
@@ -78,7 +78,7 @@ public class CollyStorage {
     public void saveCluster(String clusterName, String description) {
         Cluster cluster = clusterRepository.findByName(clusterName);
         if (cluster == null) {
-            throw new RuntimeException("Cluster with name " + clusterName + " not found");
+            throw new IllegalArgumentException("Cluster with name " + clusterName + " not found");
         }
         Log.info("Saving cluster with name " + clusterName + " description " + description);
         cluster.description = description;

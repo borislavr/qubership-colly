@@ -17,7 +17,7 @@ public class GitService {
                     .setDirectory(destinationPath)
                     .call();
         } catch (GitAPIException e) {
-            throw new RuntimeException("Error during clone repository: " + repositoryUrl, e);
+            throw new IllegalStateException("Error during clone repository: " + repositoryUrl, e);
         }
         Log.info("Repository cloned.");
     }
