@@ -1,7 +1,7 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useMemo, useState} from "react";
 import {Box, Chip, IconButton} from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
-import {DataGrid, GridColDef} from '@mui/x-data-grid';
+import {DataGrid, GridColDef, useGridApiRef} from '@mui/x-data-grid';
 import EditEnvironmentDialog from "./EditEnvironmentDialog";
 import {Environment, ENVIRONMENT_TYPES_MAPPING, STATUS_MAPPING} from "../entities/environments";
 import {UserInfo} from "../entities/users";
@@ -9,12 +9,18 @@ import dayjs from "dayjs";
 
 interface EnvTableProps {
     userInfo: UserInfo;
+    monitoringColumns: string[];
 }
 
-export default function EnvTable({userInfo}: EnvTableProps) {
+const STORAGE_KEY = 'env-table-state';
+
+export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
     const [selectedEnv, setSelectedEnv] = useState<Environment | null>(null);
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const apiRef = useGridApiRef();
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         fetch("/colly/environments").then(res => res.json())
@@ -23,8 +29,63 @@ export default function EnvTable({userInfo}: EnvTableProps) {
             .finally(() => setLoading(false));
     }, []);
 
+    useEffect(() => {
+        if (!loading && apiRef.current && environments.length > 0) {
+            try {
+                const savedState = localStorage.getItem(STORAGE_KEY);
+                if (savedState) {
+                    const state = JSON.parse(savedState);
+                    apiRef.current.restoreState(state);
+                }
+            } catch (error) {
+                console.error("Failed to load DataGrid state:", error);
+            } finally {
+                setTimeout(() => setIsInitialized(true), 100);
+            }
+        }
+    }, [loading, environments, apiRef]);
 
-    const handleSave = async (changedEnv: Environment) => {
+    const saveState = useCallback(() => {
+        if (!isInitialized || !apiRef.current) return;
+        try {
+            const state = apiRef.current.exportState();
+            const stateToSave = {
+                ...state,
+                rowSelection: undefined,
+                focus: undefined
+            };
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        } catch (error) {
+            console.error("Failed to save DataGrid state:", error);
+        }
+    }, [isInitialized, apiRef]);
+
+    useEffect(() => {
+        if (!apiRef.current || !isInitialized) return;
+
+        const unsubscribers = [
+            apiRef.current.subscribeEvent('columnVisibilityModelChange', saveState),
+            apiRef.current.subscribeEvent('columnWidthChange', saveState),
+            apiRef.current.subscribeEvent('filterModelChange', saveState),
+            apiRef.current.subscribeEvent('sortModelChange', saveState),
+            apiRef.current.subscribeEvent('paginationModelChange', saveState),
+        ];
+
+        return () => {
+            unsubscribers.forEach(unsubscribe => unsubscribe());
+        };
+    }, [saveState, apiRef, isInitialized]);
+
+    const handleEditClick = useCallback((env: Environment) => {
+        setSelectedEnv(env);
+    }, []);
+
+    const allLabels = useMemo(() => {
+        return Array.from(new Set(environments.flatMap(env => env.labels)));
+    }, [environments]);
+
+    const handleSave = useCallback(async (changedEnv: Environment) => {
         if (!changedEnv) return;
 
         try {
@@ -58,9 +119,9 @@ export default function EnvTable({userInfo}: EnvTableProps) {
         } catch (error) {
             console.error("Error during save:", error);
         }
-    };
+    }, []);
 
-    const rows = environments.map(env => ({
+    const rows = useMemo(() => environments.map(env => ({
         id: env.id,
         name: env.name,
         namespaces: env.namespaces.map(ns => ns.name).join(", "),
@@ -75,63 +136,64 @@ export default function EnvTable({userInfo}: EnvTableProps) {
         deploymentVersion: env.deploymentVersion,
         ...(env.monitoringData || {}),
         raw: env
-    }));
+    })), [environments]);
 
-    const monitoringKeys = environments.length > 0 && environments[0].monitoringData
-        ? Object.keys(environments[0].monitoringData)
-        : [];
+    const columns = useMemo(() => {
+        const monitoringCols: GridColDef[] = monitoringColumns.map(key => ({
+            field: key,
+            headerName: key,
+            flex: 0.8,
+            type: 'string'
+        }));
 
-    const monitoringColumns: GridColDef[] = monitoringKeys.map(key => ({
-        field: key,
-        headerName: key,
-        flex: 0.8,
-        type: 'string'
-    }));
-
-    const baseColumns: GridColDef[] = [
-        {field: "name", headerName: "Name", flex: 1},
-        {field: "type", headerName: "Type", flex: 1},
-        {field: "namespaces", headerName: "Namespace(s)", flex: 1},
-        {field: "cluster", headerName: "Cluster", flex: 1},
-        {field: "owner", headerName: "Owner", flex: 1},
-        {field: "team", headerName: "Team", flex: 1},
-        {field: "expirationDate", headerName: "Expiration Date",
-            valueFormatter: (value?: string) => {
-                if (value == null) {
-                    return '';
-                }
-                return new Date(value).toLocaleDateString();
+        const baseColumns: GridColDef[] = [
+            {field: "name", headerName: "Name", flex: 1},
+            {field: "type", headerName: "Type", flex: 1},
+            {field: "namespaces", headerName: "Namespace(s)", flex: 1},
+            {field: "cluster", headerName: "Cluster", flex: 1},
+            {field: "owner", headerName: "Owner", flex: 1},
+            {field: "team", headerName: "Team", flex: 1},
+            {
+                field: "expirationDate", headerName: "Expiration Date",
+                valueFormatter: (value?: string) => {
+                    if (value == null) {
+                        return '';
+                    }
+                    return new Date(value).toLocaleDateString();
+                },
+                flex: 1
             },
-            flex: 1},
-        {field: "status", headerName: "Status", flex: 1},
-        {
-            field: "labels", headerName: "Labels", flex: 1,
-            renderCell: (params: { row: { labels: string[]; }; }) =>
-                <>
-                    {params.row.labels.map(label => <Chip label={label} key={label}/>)}
-                </>
-        },
-        {field: "description", headerName: "Description", flex: 2},
-        {field: "deploymentVersion", headerName: "Version", flex: 2}
-    ];
-    const actionsColumn: GridColDef = {
-        field: "actions",
-        headerName: "Actions",
-        sortable: false,
-        filterable: false,
-        renderCell: (params: { row: { raw: React.SetStateAction<Environment | null>; }; }) => (
-            <IconButton size={"small"} onClick={() => setSelectedEnv(params.row.raw)}>
-                <EditIcon fontSize="inherit"/>
-            </IconButton>
-        ),
-        flex: 0.5
-    };
+            {field: "status", headerName: "Status", flex: 1},
+            {
+                field: "labels", headerName: "Labels", flex: 1,
+                renderCell: (params: { row: { labels: string[]; }; }) =>
+                    <>
+                        {params.row.labels.map(label => <Chip label={label} key={label}/>)}
+                    </>
+            },
+            {field: "description", headerName: "Description", flex: 2},
+            {field: "deploymentVersion", headerName: "Version", flex: 2}
+        ];
 
-    const columns: GridColDef[] = [
-        ...baseColumns,
-        ...monitoringColumns,
-        ...(userInfo.authenticated && userInfo.isAdmin ? [actionsColumn] : [])
-    ];
+        const actionsColumn: GridColDef = {
+            field: "actions",
+            headerName: "Actions",
+            sortable: false,
+            filterable: false,
+            renderCell: (params: { row: { raw: Environment; }; }) => (
+                <IconButton size={"small"} onClick={() => handleEditClick(params.row.raw)}>
+                    <EditIcon fontSize="inherit"/>
+                </IconButton>
+            ),
+            flex: 0.5
+        };
+
+        return [
+            ...baseColumns,
+            ...monitoringCols,
+            ...(userInfo.authenticated && userInfo.isAdmin ? [actionsColumn] : [])
+        ];
+    }, [monitoringColumns, userInfo.authenticated, userInfo.isAdmin, handleEditClick]);
 
     if (loading) {
         return <Box sx={{p: 4}}>Loading...</Box>;
@@ -141,6 +203,7 @@ export default function EnvTable({userInfo}: EnvTableProps) {
         <Box>
             <Box>
                 <DataGrid
+                    apiRef={apiRef}
                     rows={rows}
                     columns={columns}
                     disableRowSelectionOnClick
@@ -151,7 +214,7 @@ export default function EnvTable({userInfo}: EnvTableProps) {
             {selectedEnv && userInfo.authenticated && userInfo.isAdmin && (
                 <EditEnvironmentDialog
                     environment={selectedEnv}
-                    allLabels={Array.from(new Set(environments.flatMap(env => env.labels)))}
+                    allLabels={allLabels}
                     onSave={handleSave}
                     onClose={() => setSelectedEnv(null)}
                 />
