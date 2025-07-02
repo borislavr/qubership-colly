@@ -143,17 +143,17 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
         const monitoringCols: GridColDef[] = monitoringColumns.map(key => ({
             field: key,
             headerName: key,
-            flex: 0.8,
+            width: 150,
             type: 'string'
         }));
 
         const baseColumns: GridColDef[] = [
-            {field: "name", headerName: "Name", flex: 1},
-            {field: "type", headerName: "Type", flex: 1},
-            {field: "namespaces", headerName: "Namespace(s)", flex: 1},
-            {field: "cluster", headerName: "Cluster", flex: 1},
-            {field: "owner", headerName: "Owner", flex: 1},
-            {field: "team", headerName: "Team", flex: 1},
+            {field: "name", headerName: "Name", width: 150},
+            {field: "type", headerName: "Type", width: 120},
+            {field: "namespaces", headerName: "Namespace(s)", width: 200},
+            {field: "cluster", headerName: "Cluster", width: 150},
+            {field: "owner", headerName: "Owner", width: 120},
+            {field: "team", headerName: "Team", width: 120},
             {
                 field: "expirationDate", headerName: "Expiration Date",
                 valueFormatter: (value?: string) => {
@@ -162,23 +162,23 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                     }
                     return new Date(value).toLocaleDateString();
                 },
-                flex: 1
+                width: 150
             },
             {
-                field: "status", headerName: "Status", flex: 1,
+                field: "status", headerName: "Status", width: 120,
                 renderCell: (params: { row: { status: EnvironmentStatus; }; }) =>
                     <Chip label={STATUS_MAPPING[params.row.status]} size={"small"} color={calculateStatusColor(params.row.status)}
                     />
             },
             {
-                field: "labels", headerName: "Labels", flex: 1,
+                field: "labels", headerName: "Labels", width: 200,
                 renderCell: (params: { row: { labels: string[]; }; }) =>
                     <>
                         {params.row.labels.map(label => <Chip size={"small"} label={label} key={label}/>)}
                     </>
             },
-            {field: "description", headerName: "Description", flex: 2},
-            {field: "deploymentVersion", headerName: "Version", flex: 2},
+            {field: "description", headerName: "Description", width: 300},
+            {field: "deploymentVersion", headerName: "Version", width: 150},
             {
                 field: "cleanInstallationDate", headerName: "Clean Installation Date",
                 valueFormatter: (value?: string) => {
@@ -187,6 +187,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                     }
                     return new Date(value).toLocaleString();
                 },
+                width: 200
             }
         ];
 
@@ -216,13 +217,14 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
 
     return (
         <Box>
-            <Box>
+            <Box sx={{ width: '100%', overflowX: 'auto' }}>
                 <DataGrid
                     apiRef={apiRef}
                     rows={rows}
                     columns={columns}
                     disableRowSelectionOnClick
                     showToolbar
+                    sx={{ minWidth: 800 }}
                 />
             </Box>
 
