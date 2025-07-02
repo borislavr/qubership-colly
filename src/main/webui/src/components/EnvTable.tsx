@@ -304,7 +304,12 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                     rows={rows}
                     columns={columns}
                     rowSelection={true}
-                    sx={{minWidth: 800}}
+                    sx={{
+                        minWidth: 800,
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                            fontWeight: 'bold'
+                        }
+                    }}
                     slots={{
                         toolbar: CustomToolbar
                     }}
