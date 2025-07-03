@@ -1,7 +1,22 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {Box, Chip, IconButton} from "@mui/material";
+import {Badge, Box, Chip, InputAdornment, TextField, Tooltip} from "@mui/material";
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import CancelIcon from '@mui/icons-material/Cancel';
+import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
-import {DataGrid, GridColDef, useGridApiRef} from '@mui/x-data-grid';
+import {
+    ColumnsPanelTrigger,
+    DataGrid,
+    FilterPanelTrigger,
+    GridColDef,
+    QuickFilter,
+    QuickFilterClear,
+    QuickFilterControl,
+    Toolbar,
+    ToolbarButton,
+    useGridApiRef
+} from '@mui/x-data-grid';
 import EditEnvironmentDialog from "./EditEnvironmentDialog";
 import {Environment, ENVIRONMENT_TYPES_MAPPING, EnvironmentStatus, STATUS_MAPPING} from "../entities/environments";
 import {UserInfo} from "../entities/users";
@@ -18,6 +33,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
     const [selectedEnv, setSelectedEnv] = useState<Environment | null>(null);
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
 
     const apiRef = useGridApiRef();
     const [isInitialized, setIsInitialized] = useState(false);
@@ -52,7 +68,11 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
             const stateToSave = {
                 ...state,
                 rowSelection: undefined,
-                focus: undefined
+                focus: undefined,
+                filterModel: {
+                    filterPanelState: undefined
+                },
+                preferencePanel: undefined
             };
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -143,17 +163,17 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
         const monitoringCols: GridColDef[] = monitoringColumns.map(key => ({
             field: key,
             headerName: key,
-            flex: 0.8,
+            width: 150,
             type: 'string'
         }));
 
         const baseColumns: GridColDef[] = [
-            {field: "name", headerName: "Name", flex: 1},
-            {field: "type", headerName: "Type", flex: 1},
-            {field: "namespaces", headerName: "Namespace(s)", flex: 1},
-            {field: "cluster", headerName: "Cluster", flex: 1},
-            {field: "owner", headerName: "Owner", flex: 1},
-            {field: "team", headerName: "Team", flex: 1},
+            {field: "name", headerName: "Name", width: 150},
+            {field: "type", headerName: "Type", width: 120},
+            {field: "namespaces", headerName: "Namespace(s)", width: 200},
+            {field: "cluster", headerName: "Cluster", width: 150},
+            {field: "owner", headerName: "Owner", width: 120},
+            {field: "team", headerName: "Team", width: 120},
             {
                 field: "expirationDate", headerName: "Expiration Date",
                 valueFormatter: (value?: string) => {
@@ -162,23 +182,24 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                     }
                     return new Date(value).toLocaleDateString();
                 },
-                flex: 1
+                width: 150
             },
             {
-                field: "status", headerName: "Status", flex: 1,
+                field: "status", headerName: "Status", width: 120,
                 renderCell: (params: { row: { status: EnvironmentStatus; }; }) =>
-                    <Chip label={STATUS_MAPPING[params.row.status]} size={"small"} color={calculateStatusColor(params.row.status)}
+                    <Chip label={STATUS_MAPPING[params.row.status]} size={"small"}
+                          color={calculateStatusColor(params.row.status)}
                     />
             },
             {
-                field: "labels", headerName: "Labels", flex: 1,
+                field: "labels", headerName: "Labels", width: 200,
                 renderCell: (params: { row: { labels: string[]; }; }) =>
                     <>
                         {params.row.labels.map(label => <Chip size={"small"} label={label} key={label}/>)}
                     </>
             },
-            {field: "description", headerName: "Description", flex: 2},
-            {field: "deploymentVersion", headerName: "Version", flex: 2},
+            {field: "description", headerName: "Description", width: 300},
+            {field: "deploymentVersion", headerName: "Version", width: 150},
             {
                 field: "cleanInstallationDate", headerName: "Clean Installation Date",
                 valueFormatter: (value?: string) => {
@@ -187,28 +208,89 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                     }
                     return new Date(value).toLocaleString();
                 },
+                width: 200
             }
         ];
 
-        const actionsColumn: GridColDef = {
-            field: "actions",
-            headerName: "Actions",
-            sortable: false,
-            filterable: false,
-            renderCell: (params: { row: { raw: Environment; }; }) => (
-                <IconButton size={"small"} onClick={() => handleEditClick(params.row.raw)}>
-                    <EditIcon fontSize="inherit"/>
-                </IconButton>
-            ),
-            flex: 0.5
-        };
-
         return [
             ...baseColumns,
-            ...monitoringCols,
-            ...(userInfo.authenticated && userInfo.isAdmin ? [actionsColumn] : [])
+            ...monitoringCols
         ];
-    }, [monitoringColumns, userInfo.authenticated, userInfo.isAdmin, handleEditClick]);
+    }, [monitoringColumns]);
+
+    const CustomToolbar = () => {
+        return (
+            <Toolbar>
+                {userInfo.authenticated && userInfo.isAdmin && (
+                    <Tooltip title="Edit">
+                        <ToolbarButton
+                            size="medium"
+                            onClick={() => {
+                                const env = environments.find(e => e.id === selectedRowId);
+                                if (env) handleEditClick(env);
+                            }}
+                            disabled={!selectedRowId}
+                        >
+                            <EditIcon fontSize="small"/>
+                        </ToolbarButton>
+                    </Tooltip>
+                )}
+                <Tooltip title="Columns">
+                    <ColumnsPanelTrigger render={<ToolbarButton/>}>
+                        <ViewColumnIcon fontSize="small"/>
+                    </ColumnsPanelTrigger>
+                </Tooltip>
+
+                <Tooltip title="Filters">
+                    <FilterPanelTrigger
+                        render={(props, state) => (
+                            <ToolbarButton {...props} color="default">
+                                <Badge badgeContent={state.filterCount} color="primary" variant="dot">
+                                    <FilterListIcon fontSize="small"/>
+                                </Badge>
+                            </ToolbarButton>
+                        )}
+                    />
+                </Tooltip>
+
+                <QuickFilter>
+                    <QuickFilterControl
+                        render={({ref, ...controlProps}, state) => (
+                            <TextField
+                                {...controlProps}
+                                inputRef={ref}
+                                aria-label="Search"
+                                placeholder="Search..."
+                                size="small"
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon fontSize="small"/>
+                                            </InputAdornment>
+                                        ),
+                                        endAdornment: state.value ? (
+                                            <InputAdornment position="end">
+                                                <QuickFilterClear
+                                                    edge="end"
+                                                    size="small"
+                                                    aria-label="Clear search"
+                                                >
+                                                    <CancelIcon fontSize="small"/>
+                                                </QuickFilterClear>
+                                            </InputAdornment>
+                                        ) : null,
+                                        ...controlProps.slotProps?.input,
+                                    },
+                                    ...controlProps.slotProps,
+                                }}
+                            />
+                        )}
+                    />
+                </QuickFilter>
+            </Toolbar>
+        )
+    };
 
     if (loading) {
         return <Box sx={{p: 4}}>Loading...</Box>;
@@ -216,13 +298,31 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
 
     return (
         <Box>
-            <Box>
+            <Box sx={{width: '100%', overflowX: 'auto'}}>
                 <DataGrid
                     apiRef={apiRef}
                     rows={rows}
                     columns={columns}
-                    disableRowSelectionOnClick
+                    rowSelection={true}
+                    sx={{
+                        minWidth: 800,
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                            fontWeight: 'bold'
+                        }
+                    }}
+                    slots={{
+                        toolbar: CustomToolbar
+                    }}
                     showToolbar
+
+                    onRowSelectionModelChange={(rowSelectionModel) => {
+                        if (rowSelectionModel.ids.size > 0) {
+                            const selectedId = rowSelectionModel.ids.keys().next().value;
+                            setSelectedRowId(selectedId);
+                        } else {
+                            setSelectedRowId(null);
+                        }
+                    }}
                 />
             </Box>
 
@@ -237,6 +337,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
         </Box>
     );
 }
+
 function calculateStatusColor(status: EnvironmentStatus): "success" | "primary" | "warning" | "error" | "default" {
     switch (status) {
         case "IN_USE":
