@@ -216,7 +216,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
             ...baseColumns,
             ...monitoringCols
         ];
-    }, [monitoringColumns, userInfo.authenticated, userInfo.isAdmin]);
+    }, [monitoringColumns]);
 
     const CustomToolbar = () => {
         return (
