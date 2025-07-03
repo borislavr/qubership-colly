@@ -314,7 +314,8 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                         toolbar: CustomToolbar
                     }}
                     showToolbar
-
+                    checkboxSelection
+                    disableMultipleRowSelection
                     onRowSelectionModelChange={(rowSelectionModel) => {
                         if (rowSelectionModel.ids.size > 0) {
                             const selectedId = rowSelectionModel.ids.keys().next().value;
