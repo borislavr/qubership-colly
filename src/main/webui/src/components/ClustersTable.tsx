@@ -109,6 +109,11 @@ export default function ClustersTable({userInfo}: ClusterTableProps) {
                     slots={{
                         toolbar: () => null,
                     }}
+                    sx={{
+                        '& .MuiDataGrid-columnHeaderTitle': {
+                            fontWeight: 'bold'
+                        }
+                    }}
                 />
             </Box>
             {selectedCluster && userInfo.authenticated && userInfo.isAdmin && (
