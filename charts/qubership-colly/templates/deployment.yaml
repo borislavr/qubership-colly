@@ -29,6 +29,8 @@ spec:
                   fieldPath: metadata.namespace
             - name: QUARKUS_DATASOURCE_JDBC_URL
               value: {{ .Values.colly.db.host }}
+            - name: QUARKUS_HIBERNATE_ORM_DATABASE_DEFAULT_SCHEMA
+              value: {{ .Values.colly.db.schema | default "public" }}
             - name: QUARKUS_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
