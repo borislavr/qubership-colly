@@ -21,7 +21,11 @@ spec:
     - http:
         paths:
           - path: /
+    {{- if .Values.CLOUD_PUBLIC_HOST }}
             pathType: ImplementationSpecific
+    {{- else }}
+            pathType: Prefix
+    {{- end }}
             backend:
               service:
                 port:
