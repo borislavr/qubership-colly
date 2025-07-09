@@ -11,9 +11,14 @@ metadata:
     {{- toYaml .Values.colly.ingress.http.annotations | nindent 4 }}
   {{- end }}
 spec:
+  {{- if .Values.colly.ingress.className }}
+  ingressClassName: {{ .Values.colly.ingress.className }}
+  {{- end }}
   rules:
+    {{- if .Values.CLOUD_PUBLIC_HOST }}
     - host: "{{ .Values.colly.serviceName }}-{{ .Values.NAMESPACE }}.{{ .Values.CLOUD_PUBLIC_HOST}}"
-      http:
+    {{- end }}
+    - http:
         paths:
           - path: /
             pathType: ImplementationSpecific
