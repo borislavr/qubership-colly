@@ -6,6 +6,9 @@ import LogoutButton from "./components/LogoutButton";
 import {UserInfo} from "./entities/users";
 import TabPanel from "./components/TabPanel";
 import {AppMetadata} from "./entities/metadata";
+import {httpClient} from "./utils/httpClient";
+import {useSessionKeepAlive} from "./hooks/useSessionKeepAlive";
+import {AxiosResponse} from "axios";
 
 
 function App() {
@@ -13,21 +16,22 @@ function App() {
     const [userInfo, setUserInfo] = useState<UserInfo>({authenticated: false});
     const [metadata, setMetadata] = useState<AppMetadata | null>(null);
     const [metadataLoading, setMetadataLoading] = useState(true);
+    
+    // Keep session alive during user activity
+    useSessionKeepAlive();
 
     useEffect(() => {
-        const fetchAuthStatus = fetch("/colly/auth-status")
-            .then(res => res.json())
-            .then(authData => {
-                setUserInfo(authData);
+        const fetchAuthStatus = httpClient.get<UserInfo>("/colly/auth-status")
+            .then((response: AxiosResponse<UserInfo>) => {
+                setUserInfo(response.data);
             })
-            .catch(err => {
+            .catch((err: any) => {
                 console.error("Failed to fetch auth status:", err);
             });
 
-        const fetchMetadata = fetch("/colly/metadata")
-            .then(res => res.json())
-            .then((metaData: AppMetadata) => setMetadata(metaData))
-            .catch(err => {
+        const fetchMetadata = httpClient.get<AppMetadata>("/colly/metadata")
+            .then((response: AxiosResponse<AppMetadata>) => setMetadata(response.data))
+            .catch((err: any) => {
                 console.error("Failed to fetch app metadata:", err);
                 setMetadata({
                     monitoringColumns: []

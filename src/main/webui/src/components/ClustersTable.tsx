@@ -15,6 +15,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import EditClusterDialog from "./EditClusterDialog";
 import SearchIcon from "@mui/icons-material/Search";
 import CancelIcon from "@mui/icons-material/Cancel";
+import {httpClient} from "../utils/httpClient";
+import {AxiosResponse} from "axios";
 
 interface ClusterTableProps {
     userInfo: UserInfo;
@@ -28,10 +30,9 @@ export default function ClustersTable({userInfo}: ClusterTableProps) {
 
 
     useEffect(() => {
-        fetch("/colly/clusters")
-            .then(res => res.json())
-            .then(clustersData => setClusters(clustersData))
-            .catch(err => console.error("Failed to fetch clusters:", err))
+        httpClient.get<Cluster[]>("/colly/clusters")
+            .then((response: AxiosResponse<Cluster[]>) => setClusters(response.data))
+            .catch((err: any) => console.error("Failed to fetch clusters:", err))
             .finally(() => setLoading(false));
     }, []);
 
@@ -50,18 +51,10 @@ export default function ClustersTable({userInfo}: ClusterTableProps) {
             }
             formData.append("name", changedCluster.name);
 
-            const response = await fetch(`/colly/clusters/${changedCluster.name}`, {
-                method: "POST",
-                body: formData
-            });
-
-            if (response.ok) {
-                setSelectedCluster(null);
-                setClusters(prev => prev.map(cluster => cluster.name === changedCluster.name ? changedCluster : cluster));
-            } else {
-                console.error("Failed to save changes", await response.text());
-            }
-        } catch (error) {
+            await httpClient.post(`/colly/clusters/${changedCluster.name}`, formData);
+            setSelectedCluster(null);
+            setClusters(prev => prev.map(cluster => cluster.name === changedCluster.name ? changedCluster : cluster));
+        } catch (error: any) {
             console.error("Error during save:", error);
         }
     };

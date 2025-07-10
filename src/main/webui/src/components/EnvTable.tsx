@@ -21,6 +21,8 @@ import EditEnvironmentDialog from "./EditEnvironmentDialog";
 import {Environment, ENVIRONMENT_TYPES_MAPPING, EnvironmentStatus, STATUS_MAPPING} from "../entities/environments";
 import {UserInfo} from "../entities/users";
 import dayjs from "dayjs";
+import {httpClient} from "../utils/httpClient";
+import {AxiosResponse} from "axios";
 
 interface EnvTableProps {
     userInfo: UserInfo;
@@ -39,9 +41,9 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
     const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
-        fetch("/colly/environments").then(res => res.json())
-            .then(envData => setEnvironments(envData))
-            .catch(err => console.error("Failed to fetch environments:", err))
+        httpClient.get<Environment[]>("/colly/environments")
+            .then((response: AxiosResponse<Environment[]>) => setEnvironments(response.data))
+            .catch((err: any) => console.error("Failed to fetch environments:", err))
             .finally(() => setLoading(false));
     }, []);
 
@@ -125,18 +127,10 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
             formData.append("expirationDate", changedEnv.expirationDate ? dayjs(changedEnv.expirationDate).format("YYYY-MM-DD") : "");
             changedEnv.labels.forEach(label => formData.append("labels", label));
 
-            const response = await fetch(`/colly/environments/${changedEnv.id}`, {
-                method: "POST",
-                body: formData
-            });
-
-            if (response.ok) {
-                setSelectedEnv(null);
-                setEnvironments(prev => prev.map(env => env.id === changedEnv.id ? changedEnv : env));
-            } else {
-                console.error("Failed to save changes", await response.text());
-            }
-        } catch (error) {
+            await httpClient.post(`/colly/environments/${changedEnv.id}`, formData);
+            setSelectedEnv(null);
+            setEnvironments(prev => prev.map(env => env.id === changedEnv.id ? changedEnv : env));
+        } catch (error: any) {
             console.error("Error during save:", error);
         }
     }, []);
