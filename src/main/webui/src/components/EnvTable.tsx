@@ -5,6 +5,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import CancelIcon from '@mui/icons-material/Cancel';
 import SearchIcon from '@mui/icons-material/Search';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
     ColumnsPanelTrigger,
     DataGrid,
@@ -17,10 +18,11 @@ import {
     ToolbarButton,
     useGridApiRef
 } from '@mui/x-data-grid';
-import EditEnvironmentDialog from "./EditEnvironmentDialog";
 import {Environment, ENVIRONMENT_TYPES_MAPPING, EnvironmentStatus, STATUS_MAPPING} from "../entities/environments";
 import {UserInfo} from "../entities/users";
 import dayjs from "dayjs";
+import ConfirmationDialog from "./ConfirmDialog";
+import EditEnvironmentDialog from "./EditEnvironmentDialog";
 
 interface EnvTableProps {
     userInfo: UserInfo;
@@ -30,10 +32,12 @@ interface EnvTableProps {
 const STORAGE_KEY = 'env-table-state';
 
 export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
-    const [selectedEnv, setSelectedEnv] = useState<Environment | null>(null);
     const [environments, setEnvironments] = useState<Environment[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
+    const [selectedEnvironment, setSelectedEnvironment] = useState<Environment | null>(null);
+    const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+    const [showEditDialog, setShowEditDialog] = useState(false);
+
 
     const apiRef = useGridApiRef();
     const [isInitialized, setIsInitialized] = useState(false);
@@ -97,17 +101,33 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
         };
     }, [saveState, apiRef, isInitialized]);
 
-    const handleEditClick = useCallback((env: Environment) => {
-        setSelectedEnv(env);
-    }, []);
+    const handleDeleteAction = useCallback(async () => {
+        try {
+            if (!selectedEnvironment) {
+                console.error("selected env is null")
+                return;
+            }
+            const response = await fetch(`/colly/environments/${selectedEnvironment.id}`, {
+                method: "DELETE",
+            });
+
+            if (response.ok) {
+                setSelectedEnvironment(null)
+                setShowConfirmPopup(false)
+                setEnvironments(prev => prev.filter(env => env.id !== selectedEnvironment.id));
+            } else {
+                console.error("Failed to delete environment", await response.text());
+            }
+        } catch (error) {
+            console.error("Error during delete environment:", error);
+        }
+    }, [selectedEnvironment]);
 
     const allLabels = useMemo(() => {
         return Array.from(new Set(environments.flatMap(env => env.labels)));
     }, [environments]);
 
-    const handleSave = useCallback(async (changedEnv: Environment) => {
-        if (!changedEnv) return;
-
+    const handleSaveAction = useCallback(async (changedEnv: Environment) => {
         try {
             const formData = new FormData();
             if (changedEnv.owner) {
@@ -131,7 +151,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
             });
 
             if (response.ok) {
-                setSelectedEnv(null);
+                setShowEditDialog(false);
                 setEnvironments(prev => prev.map(env => env.id === changedEnv.id ? changedEnv : env));
             } else {
                 console.error("Failed to save changes", await response.text());
@@ -225,16 +245,23 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                     <Tooltip title="Edit">
                         <ToolbarButton
                             size="medium"
-                            onClick={() => {
-                                const env = environments.find(e => e.id === selectedRowId);
-                                if (env) handleEditClick(env);
-                            }}
-                            disabled={!selectedRowId}
-                        >
+                            onClick={() => setShowEditDialog(true)}
+                            disabled={!selectedEnvironment}>
                             <EditIcon fontSize="small"/>
                         </ToolbarButton>
                     </Tooltip>
                 )}
+                {userInfo.authenticated && userInfo.isAdmin && (
+                    <Tooltip title="Delete">
+                        <ToolbarButton
+                            size="medium"
+                            onClick={() => setShowConfirmPopup(true)}
+                            disabled={!selectedEnvironment}>
+                            <DeleteIcon fontSize="small"/>
+                        </ToolbarButton>
+                    </Tooltip>
+                )}
+
                 <Tooltip title="Columns">
                     <ColumnsPanelTrigger render={<ToolbarButton/>}>
                         <ViewColumnIcon fontSize="small"/>
@@ -319,22 +346,33 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                     onRowSelectionModelChange={(rowSelectionModel) => {
                         if (rowSelectionModel.ids.size > 0) {
                             const selectedId = rowSelectionModel.ids.keys().next().value;
-                            setSelectedRowId(selectedId);
+                            let environment = environments.find(e => e.id === selectedId);
+                            if (environment) {
+                                setSelectedEnvironment(environment);
+                            } else {
+                                setSelectedEnvironment(null)
+                            }
                         } else {
-                            setSelectedRowId(null);
+                            setSelectedEnvironment(null);
                         }
-                    }}
+                    }
+                    }
                 />
             </Box>
 
-            {selectedEnv && userInfo.authenticated && userInfo.isAdmin && (
-                <EditEnvironmentDialog
-                    environment={selectedEnv}
-                    allLabels={allLabels}
-                    onSave={handleSave}
-                    onClose={() => setSelectedEnv(null)}
-                />
-            )}
+            {selectedEnvironment && userInfo.authenticated && userInfo.isAdmin && (<EditEnvironmentDialog
+                show={showEditDialog}
+                environment={selectedEnvironment}
+                allLabels={allLabels}
+                onSave={handleSaveAction}
+                onClose={() => setShowEditDialog(false)}
+            />)}
+
+            <ConfirmationDialog open={showConfirmPopup}
+                                title={"Delete Environment"}
+                                content={"Are you sure you want to permanently delete the environment: " + selectedEnvironment?.name + ". All data will be lost and cannot be recovered."}
+                                onClose={() => setShowConfirmPopup(false)}
+                                onConfirm={handleDeleteAction}/>
         </Box>
     );
 }
