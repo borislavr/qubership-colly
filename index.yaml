@@ -1,0 +1,11 @@
+apiVersion: v1
+entries:
+  qubership-colly:
+  - apiVersion: v2
+    created: "2025-07-14T15:13:36.379859003Z"
+    digest: a311f479d519d59fd15885321bbae33bc8dc5551574f3668df364afdc24b308c
+    name: qubership-colly
+    urls:
+    - https://github.com/Netcracker/qubership-colly/releases/download/qubership-colly-1.7.1/qubership-colly-1.7.1.tgz
+    version: 1.7.1
+generated: "2025-07-14T15:13:36.379863893Z"
