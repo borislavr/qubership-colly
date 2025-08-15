@@ -1,28 +1,13 @@
 import React, {useCallback, useEffect, useMemo, useState} from "react";
-import {Badge, Box, Chip, InputAdornment, TextField, Tooltip} from "@mui/material";
-import ViewColumnIcon from '@mui/icons-material/ViewColumn';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import CancelIcon from '@mui/icons-material/Cancel';
-import SearchIcon from '@mui/icons-material/Search';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import {
-    ColumnsPanelTrigger,
-    DataGrid,
-    FilterPanelTrigger,
-    GridColDef,
-    QuickFilter,
-    QuickFilterClear,
-    QuickFilterControl,
-    Toolbar,
-    ToolbarButton,
-    useGridApiRef
-} from '@mui/x-data-grid';
+import {Box, Chip} from "@mui/material";
+import {DataGrid, GridColDef, useGridApiRef} from '@mui/x-data-grid';
 import {Environment, ENVIRONMENT_TYPES_MAPPING, EnvironmentStatus, STATUS_MAPPING} from "../entities/environments";
 import {UserInfo} from "../entities/users";
 import dayjs from "dayjs";
 import ConfirmationDialog from "./ConfirmDialog";
 import EditEnvironmentDialog from "./EditEnvironmentDialog";
+import EnvTableToolbar from "./EnvTableToolbar";
+import {Namespace} from "../entities/namespaces";
 
 interface EnvTableProps {
     userInfo: UserInfo;
@@ -37,6 +22,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
     const [selectedEnvironment, setSelectedEnvironment] = useState<Environment | null>(null);
     const [showConfirmPopup, setShowConfirmPopup] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
+    const [showAllNamespaces, setShowAllNamespaces] = useState(false);
 
 
     const apiRef = useGridApiRef();
@@ -56,6 +42,10 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                 if (savedState) {
                     const state = JSON.parse(savedState);
                     apiRef.current.restoreState(state);
+
+                    if (state.showAllNamespaces !== undefined) {
+                        setShowAllNamespaces(state.showAllNamespaces);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to load DataGrid state:", error);
@@ -76,14 +66,15 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                 filterModel: {
                     filterPanelState: undefined
                 },
-                preferencePanel: undefined
+                preferencePanel: undefined,
+                showAllNamespaces: showAllNamespaces
             };
 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
         } catch (error) {
             console.error("Failed to save DataGrid state:", error);
         }
-    }, [isInitialized, apiRef]);
+    }, [isInitialized, apiRef, showAllNamespaces]);
 
     useEffect(() => {
         if (!apiRef.current || !isInitialized) return;
@@ -100,6 +91,12 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
             unsubscribers.forEach(unsubscribe => unsubscribe());
         };
     }, [saveState, apiRef, isInitialized]);
+
+    useEffect(() => {
+        if (isInitialized) {
+            saveState();
+        }
+    }, [showAllNamespaces, saveState, isInitialized]);
 
     const handleDeleteAction = useCallback(async () => {
         try {
@@ -164,7 +161,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
     const rows = useMemo(() => environments.map(env => ({
         id: env.id,
         name: env.name,
-        namespaces: env.namespaces,
+        namespaces: env.namespaces.filter((namespace: Namespace) => showAllNamespaces || namespace.existsInK8s),
         cluster: env.cluster?.name,
         owner: env.owner,
         team: env.team,
@@ -177,7 +174,7 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
         cleanInstallationDate: env.cleanInstallationDate,
         ...(env.monitoringData || {}),
         raw: env
-    })), [environments]);
+    })), [environments, showAllNamespaces]);
 
     const columns = useMemo(() => {
         const monitoringCols: GridColDef[] = monitoringColumns.map(key => ({
@@ -194,9 +191,11 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
                 field: "namespaces", headerName: "Namespace(s)", width: 200,
                 renderCell: (params) => (
                     <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                        {params.row.namespaces.map((namespace: { name: string }) => (
-                            <span key={namespace.name}>{namespace.name}</span>
-                        ))}
+                        {params.row.namespaces
+                            .map((namespace: Namespace) => (
+                                <Box key={namespace.name}
+                                     sx={{color: namespace.existsInK8s ? "default" : "error.main"}}>{namespace.name}</Box>
+                            ))}
                     </Box>
                 )
             },
@@ -249,83 +248,15 @@ export default function EnvTable({userInfo, monitoringColumns}: EnvTableProps) {
 
     const CustomToolbar = () => {
         return (
-            <Toolbar>
-                {userInfo.authenticated && userInfo.isAdmin && (
-                    <Tooltip title="Edit">
-                        <ToolbarButton
-                            size="medium"
-                            onClick={() => setShowEditDialog(true)}
-                            disabled={!selectedEnvironment}>
-                            <EditIcon fontSize="small"/>
-                        </ToolbarButton>
-                    </Tooltip>
-                )}
-                {userInfo.authenticated && userInfo.isAdmin && (
-                    <Tooltip title="Delete">
-                        <ToolbarButton
-                            size="medium"
-                            onClick={() => setShowConfirmPopup(true)}
-                            disabled={!selectedEnvironment}>
-                            <DeleteIcon fontSize="small"/>
-                        </ToolbarButton>
-                    </Tooltip>
-                )}
-
-                <Tooltip title="Columns">
-                    <ColumnsPanelTrigger render={<ToolbarButton/>}>
-                        <ViewColumnIcon fontSize="small"/>
-                    </ColumnsPanelTrigger>
-                </Tooltip>
-
-                <Tooltip title="Filters">
-                    <FilterPanelTrigger
-                        render={(props, state) => (
-                            <ToolbarButton {...props} color="default">
-                                <Badge badgeContent={state.filterCount} color="primary" variant="dot">
-                                    <FilterListIcon fontSize="small"/>
-                                </Badge>
-                            </ToolbarButton>
-                        )}
-                    />
-                </Tooltip>
-
-                <QuickFilter>
-                    <QuickFilterControl
-                        render={({ref, ...controlProps}, state) => (
-                            <TextField
-                                {...controlProps}
-                                inputRef={ref}
-                                aria-label="Search"
-                                placeholder="Search..."
-                                size="small"
-                                slotProps={{
-                                    input: {
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <SearchIcon fontSize="small"/>
-                                            </InputAdornment>
-                                        ),
-                                        endAdornment: state.value ? (
-                                            <InputAdornment position="end">
-                                                <QuickFilterClear
-                                                    edge="end"
-                                                    size="small"
-                                                    aria-label="Clear search"
-                                                >
-                                                    <CancelIcon fontSize="small"/>
-                                                </QuickFilterClear>
-                                            </InputAdornment>
-                                        ) : null,
-                                        ...controlProps.slotProps?.input,
-                                    },
-                                    ...controlProps.slotProps,
-                                }}
-                            />
-                        )}
-                    />
-                </QuickFilter>
-            </Toolbar>
-        )
+            <EnvTableToolbar
+                userInfo={userInfo}
+                selectedEnvironment={selectedEnvironment}
+                showAllNamespaces={showAllNamespaces}
+                onShowEditDialog={() => setShowEditDialog(true)}
+                onShowConfirmPopup={() => setShowConfirmPopup(true)}
+                onShowAllNamespacesChange={setShowAllNamespaces}
+            />
+        );
     };
 
     if (loading) {
