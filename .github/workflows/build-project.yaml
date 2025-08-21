@@ -23,6 +23,8 @@ jobs:
           java-version: 21
           maven-command: clean install
           working-directory: ${{ matrix.component }}
+          upload-artifact: 'true'
+          artifact-id: ${{ matrix.component }}
 #      - name: Get version for current component
 #        run: |
 #          echo "IMAGE=${{ matrix.component }}" >> $GITHUB_ENV
