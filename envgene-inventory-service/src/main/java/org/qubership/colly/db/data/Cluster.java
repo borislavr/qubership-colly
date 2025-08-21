@@ -2,15 +2,22 @@ package org.qubership.colly.db.data;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
+import org.qubership.colly.cloudpassport.CloudPassportEnvironment;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Entity(name = "clusters")
 public class Cluster extends PanacheEntityBase {
     @Id
     private String name;
-    private boolean synced;
+    @Column(columnDefinition = "TEXT")
+    private String token;
+    private String cloudApiHost;
+
+    private URI monitoringUrl;
 
     @OneToMany(mappedBy = "cluster", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public List<Environment> environments;
@@ -18,16 +25,6 @@ public class Cluster extends PanacheEntityBase {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     public List<Namespace> namespaces;
     private String description;
-
-    public Cluster(String name) {
-        this.name = name;
-        this.synced = false;
-        this.namespaces = new ArrayList<>();
-        this.environments = new ArrayList<>();
-    }
-
-    public Cluster() {
-    }
 
     public String getName() {
         return name;
@@ -45,11 +42,27 @@ public class Cluster extends PanacheEntityBase {
         this.description = description;
     }
 
-    public boolean isSynced() {
-        return synced;
+    public String getToken() {
+        return token;
     }
 
-    public void setSynced(boolean synced) {
-        this.synced = synced;
+    public void setToken(String token) {
+        this.token = token;
+    }
+
+    public String getCloudApiHost() {
+        return cloudApiHost;
+    }
+
+    public void setCloudApiHost(String cloudApiHost) {
+        this.cloudApiHost = cloudApiHost;
+    }
+
+    public URI getMonitoringUrl() {
+        return monitoringUrl;
+    }
+
+    public void setMonitoringUrl(URI monitoringUrl) {
+        this.monitoringUrl = monitoringUrl;
     }
 }

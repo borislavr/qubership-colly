@@ -38,10 +38,7 @@ public class EnvironmentMapper {
                 entity.getExpirationDate(),
                 entity.getType(),
                 entity.getLabels(),
-                entity.getDescription(),
-                entity.getDeploymentVersion(),
-                entity.getCleanInstallationDate(),
-                entity.getMonitoringData()
+                entity.getDescription()
         );
     }
 
@@ -60,7 +57,7 @@ public class EnvironmentMapper {
             return List.of();
         }
         return namespaces.stream()
-                .map(ns -> new NamespaceDTO(ns.getUid(), ns.getName(), ns.isExistsInK8s()))
+                .map(ns -> new NamespaceDTO(ns.getUid(), ns.getName()))
                 .toList();
     }
 }

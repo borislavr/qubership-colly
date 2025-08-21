@@ -21,10 +21,7 @@ public record EnvironmentDTO(
         LocalDate expirationDate,
         EnvironmentType type,
         List<String> labels,
-        String description,
-        String deploymentVersion,
-        Instant cleanInstallationDate,
-        Map<String, String> monitoringData
+        String description
 ) {
 
 }

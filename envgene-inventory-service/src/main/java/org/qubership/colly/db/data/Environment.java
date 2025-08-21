@@ -18,7 +18,6 @@ public class Environment extends PanacheEntity {
     private String team;
     private String description;
     private LocalDate expirationDate;
-    private Instant cleanInstallationDate;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -32,13 +31,6 @@ public class Environment extends PanacheEntity {
     @JoinColumn(referencedColumnName = "name")
     private Cluster cluster;
 
-    @ElementCollection
-    @CollectionTable(name = "monitoring_data_content", joinColumns = @JoinColumn(name = "id"))
-    @MapKeyColumn(name = "key")
-    @Column(name = "value", columnDefinition = "TEXT")
-    private Map<String, String> monitoringData;
-
-    private String deploymentVersion;
 
     @ElementCollection
     @CollectionTable(name = "environments_labels", joinColumns = @JoinColumn(name = "environment_id"))
@@ -75,14 +67,6 @@ public class Environment extends PanacheEntity {
 
     public void setLabels(List<String> labels) {
         this.labels = new ArrayList<>(labels);
-    }
-
-    public String getDeploymentVersion() {
-        return deploymentVersion;
-    }
-
-    public void setDeploymentVersion(String deploymentVersion) {
-        this.deploymentVersion = deploymentVersion;
     }
 
     public LocalDate getExpirationDate() {
@@ -149,20 +133,5 @@ public class Environment extends PanacheEntity {
         this.cluster = cluster;
     }
 
-    public Map<String, String> getMonitoringData() {
-        return monitoringData;
-    }
-
-    public void setMonitoringData(Map<String, String> monitoringData) {
-        this.monitoringData = monitoringData;
-    }
-
-    public Instant getCleanInstallationDate() {
-        return cleanInstallationDate;
-    }
-
-    public void setCleanInstallationDate(Instant cleanInstallationDate) {
-        this.cleanInstallationDate = cleanInstallationDate;
-    }
 }
 
