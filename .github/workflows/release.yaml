@@ -64,6 +64,7 @@ jobs:
           upload-artifact: "false"
           artifact-id: ${{ matrix.component }}
           maven-token: ${{ secrets.GITHUB_TOKEN }}
+          target-store: github
 
   prepare-chart-release:
     needs: [mvn-check-build, check-tag]
@@ -114,6 +115,7 @@ jobs:
           upload-artifact: "true"
           artifact-id: ${{ matrix.component }}
           maven-token: ${{ secrets.GITHUB_TOKEN }}
+          target-store: github
 
   prepare-metadata:
     permissions:
@@ -206,7 +208,7 @@ jobs:
 
   github-release:
     needs: [charts-release]
-    uses: netcracker/qubership-workflow-hub/.github/workflows/release-drafter.yml@main
+    uses: myborislavrorg/qubership-workflow-hub/.github/workflows/release-drafter.yml@main
     with:
       version: ${{ inputs.release }}
       publish: true
